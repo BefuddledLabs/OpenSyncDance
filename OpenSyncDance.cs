@@ -82,7 +82,16 @@ namespace OpenSyncDance
         private OpenSyncDance _self;
 
         private AacFlBase _aac;
-        private AacFlLayer _mainLayer;
+
+        /// <summary>
+        /// Layer that manages receiving the animation id and triggering dance animations.
+        /// </summary>
+        private AacFlLayer _recvLayer;
+
+        /// <summary>
+        /// Layer that manages broadcasting the animation id.
+        /// </summary>
+        private AacFlLayer _sendLayer;
 
         /// <summary>
         /// The animations that need to be syncable.
@@ -150,24 +159,26 @@ namespace OpenSyncDance
                 DefaultsProvider = new AacDefaultsProvider(_self.useWriteDefaults),
             });
 
-            _mainLayer = _aac.CreateMainArbitraryControllerLayer(_animationController);
+            _recvLayer = _aac.CreateMainArbitraryControllerLayer(_animationController);
+            _sendLayer = _aac.CreateMainArbitraryControllerLayer(_animationController);
 
-            // Create the parameters for recieving the animtion index;
+            // Create the parameters for recieving the animation index;
             var receiveParamNames = new List<string>();
             for (int i = 0; i < _numberOfBits; i++)
                 receiveParamNames.Add(string.Format(_recvParamName, i));
-            _paramRecvBits = _mainLayer.BoolParameters(receiveParamNames.ToArray());
+            _paramRecvBits = _recvLayer.BoolParameters(receiveParamNames.ToArray());
 
-            // Create the parameters for sending the animtion index;
+            // Create the parameters for sending the animation index;
             var sendParamNames = new List<string>();
             for (int i = 0; i < _numberOfBits; i++)
                 sendParamNames.Add(string.Format(_sendParamName, i));
-            _paramSendBits = _mainLayer.BoolParameters(sendParamNames.ToArray());
+            _paramSendBits = _sendLayer.BoolParameters(sendParamNames.ToArray());
         }
 
         private void Generate()
         {
             // Destroy children >:)
+            // TODO: add method to keep certain objects for e.g. props that may be used
             while (_self.transform.childCount > 0)
                 DestroyImmediate(_self.transform.GetChild(0).gameObject);
 
