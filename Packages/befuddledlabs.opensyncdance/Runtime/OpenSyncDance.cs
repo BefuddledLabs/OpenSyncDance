@@ -2,11 +2,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AnimatorAsCode.V1;
 using AnimatorAsCode.V1.VRC;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
+using VRC.SDK3.Avatars.ScriptableObjects;
 using VRC.SDK3.Dynamics.Contact.Components;
 using VRC.SDKBase;
 
@@ -51,6 +53,11 @@ namespace BefuddledLabs.OpenSyncDance
         /// UUID used for tracking purposes. Mainly used by Animator as Code.
         /// </summary>
         public string assetKey;
+        
+        /// <summary>
+        /// Prefix string used for the contacts.
+        /// </summary>
+        public string contactPrefix = "OSDDefault_";
 
         /// <summary>
         /// Do we use write defaults? Yeag or nope?
@@ -61,7 +68,7 @@ namespace BefuddledLabs.OpenSyncDance
         /// The animator controller that we will be generating.
         /// </summary>
         public AnimatorController animatorControllerFX;
-        
+
         /// <summary>
         /// The animator controller that we will be generating.
         /// </summary>
@@ -108,12 +115,17 @@ namespace BefuddledLabs.OpenSyncDance
         /// <summary>
         /// Parameter format of the contact bit receiver. This value needs to be formatted with <tt>string.Format</tt>.
         /// </summary>
-        private string _recvBitParamName = "OSD_RecvBit{0}";
+        private string _recvBitParamName => _contactPrefix + "OSD_RecvBit{0}";
 
         /// <summary>
         /// Parameter name of the animation id that we want to broadcast.
         /// </summary>
         private string _sendAnimIdName = "OSD_SendAnim";
+
+        /// <summary>
+        /// Prefix string used for the contacts.
+        /// </summary>
+        private string _contactPrefix => _self.contactPrefix;
 
         // TODO: make this a variable that you can set from ui whatever idk??? lol --nara
         /// <summary>
@@ -137,9 +149,12 @@ namespace BefuddledLabs.OpenSyncDance
         {
             serializedObject.Update();
 
+            var contactPrefix_property = serializedObject.FindProperty("contactPrefix");
+            EditorGUILayout.PropertyField(contactPrefix_property, true);
+
             var assetContainer_property = serializedObject.FindProperty("animatorControllerFX");
             EditorGUILayout.PropertyField(assetContainer_property, true);
-            
+
             assetContainer_property = serializedObject.FindProperty("animatorControllerAction");
             EditorGUILayout.PropertyField(assetContainer_property, true);
 
@@ -155,6 +170,7 @@ namespace BefuddledLabs.OpenSyncDance
                     throw new ArgumentNullException();
 
                 AnimatorSetup();
+                CreateMenu();
                 Generate();
             }
         }
@@ -237,18 +253,18 @@ namespace BefuddledLabs.OpenSyncDance
                 readyState.TransitionsFromEntry();
                 exitState.Exits().Automatically().WithTransitionDurationSeconds(0.5f);
 
-                for (int i = 1; i < _animations.Count+1; i++)
+                for (int i = 1; i < _animations.Count + 1; i++)
                 {
-                    var currentSyncedAnimation = _animations[i-1];
-                    // TODO: add animation that toggles the senders
+                    var currentSyncedAnimation = _animations[i - 1];
                     var danceState = _sendLayer.NewState($"Dance {(currentSyncedAnimation.animation == null ? i : currentSyncedAnimation.animation.name)}");
                     var musicState = _sendLayer.NewState($"Music {(currentSyncedAnimation.audio == null ? i : currentSyncedAnimation.audio.name)}");
 
                     // Set the audio clip on the audio source
-                    if (currentSyncedAnimation.audio != null) 
+                    if (currentSyncedAnimation.audio != null)
                     {
                         musicState.Audio(_audioSource,
-                            (a) => {
+                            (a) =>
+                            {
                                 a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
                                     new[] { currentSyncedAnimation.audio });
                                 a.PlayAudio.PlayOnEnter = true;
@@ -259,20 +275,21 @@ namespace BefuddledLabs.OpenSyncDance
 
                     readyState.TransitionsTo(danceState).When(_paramSendAnimId.IsEqualTo(i));
                     var musicConditions = danceState.TransitionsTo(musicState).WhenConditions();
-                    
+
                     // Ew: Toggles the bits for the animations
-                    var toggleClip = _aac.NewClip().Animating(a => {
-                        for (int j = 0; j < recvParamNames.Count; j++) 
+                    var toggleClip = _aac.NewClip().Animating(a =>
+                    {
+                        for (int j = 0; j < recvParamNames.Count; j++)
                         {
                             var wantedParamState = (i & (1 << j)) > 0;
                             musicConditions = musicConditions.And(recvParamNames[j].IsEqualTo(wantedParamState));
                             a.Animates(contactSenders[j].gameObject).WithOneFrame(wantedParamState ? 1 : 0);
                         }
                     });
-                    
+
                     danceState.WithAnimation(toggleClip);
                     musicState.WithAnimation(toggleClip);
-                    
+
                     musicState.TransitionsTo(exitState).When(_paramSendAnimId.IsNotEqualTo(i));
                 }
             }
@@ -281,7 +298,7 @@ namespace BefuddledLabs.OpenSyncDance
                 var readyState = _recvLayer.NewState("Ready");
                 var danceState = _recvLayer.NewSubStateMachine("Dance");
                 var doneState = _recvLayer.NewState("Done");
-                
+
                 // Ugly thing to not IK sync the animation
                 doneState.TrackingTracks(AacAv3.Av3TrackingElement.Head);
                 doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftHand);
@@ -296,25 +313,25 @@ namespace BefuddledLabs.OpenSyncDance
 
                 danceState.PlayableEnables(VRC_PlayableLayerControl.BlendableLayer.Action);
                 doneState.PlayableDisables(VRC_PlayableLayerControl.BlendableLayer.Action);
-                
+
                 doneState.Exits().Automatically();
 
                 // Transition to dance blend tree whenever an animation is triggered
                 readyState.TransitionsFromEntry();
                 readyState.TransitionsTo(danceState).When(_paramRecvBits.IsAnyTrue());
-                danceState.TransitionsTo(doneState); 
+                danceState.TransitionsTo(doneState);
 
                 var animationStates = new List<AacFlState>();
                 Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(danceState), _paramRecvBits, _numberOfBits, ref animationStates);
 
-                for (int i = 1; i < _animations.Count+1; i++)
+                for (int i = 1; i < _animations.Count + 1; i++)
                 {
                     var currentState = animationStates[i];
-                    var currentSyncedAnimation = _animations[i-1];
-                    if (currentSyncedAnimation.animation != null) 
+                    var currentSyncedAnimation = _animations[i - 1];
+                    if (currentSyncedAnimation.animation != null)
                     {
                         currentState.WithAnimation(currentSyncedAnimation.animation);
-                        
+
                         // Ugly thing to turn IK sync back on
                         currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Head);
                         currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftHand);
@@ -328,6 +345,68 @@ namespace BefuddledLabs.OpenSyncDance
                         currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Mouth);
                     }
                 }
+            }
+        }
+
+        private void CreateMenu()
+        {
+            const int animsPerPage = 7;
+            // The last page can contain one more than the usual anims per page, so subtract
+            // one from the total. Then use 'divisor minus 1'-trick for a ceiling div.
+            int numPages = (_animations.Count + animsPerPage - 2) / animsPerPage;
+
+            // Create a path of folders
+            List<string> assetFolderPath = new() { "Assets", "OpenSyncDanceGenerated", _self.assetKey };
+            for (int i = 1; i < assetFolderPath.Count; i++)
+            {
+                // We don't have to create the assets folder, so  we start at i = 1. Then for every
+                // item, 
+                var prefixPath = string.Join('/', assetFolderPath.Take(i));
+                AssetDatabase.CreateFolder(prefixPath, assetFolderPath[i]);
+            }
+            var assetFolder = string.Join('/', assetFolderPath);
+
+            // Create VRC params asset
+            var vrcParams = CreateInstance<VRCExpressionParameters>();
+            vrcParams.parameters = new VRCExpressionParameters.Parameter[] {
+                new() {
+                    name = _paramSendAnimId.Name,
+                    valueType = VRCExpressionParameters.ValueType.Int,
+                    saved = false,
+                    networkSynced = true,
+                    defaultValue = 0,
+                }
+            };
+            AssetDatabase.CreateAsset(vrcParams, $"{assetFolder}/OSD_Params.asset");
+
+            // Create VRC menu assets
+            for (int pageId = 0, animationId = 0; pageId < numPages; pageId++)
+            {
+                bool isLastPage = pageId == numPages - 1;
+                int animsOnThisPage = animsPerPage + (isLastPage ? 1 : 0);
+
+                var vrcMenu = CreateInstance<VRCExpressionsMenu>();
+
+                // Skip animations that we already put in pages, then take enough to fill the page.
+                // Map the taken items to a VRC menu button.
+                vrcMenu.controls = _animations.Skip(animsPerPage * pageId).Take(animsOnThisPage).Select((SyncedAnimation anim) =>
+                {
+                    animationId++;
+                    return new VRCExpressionsMenu.Control
+                    {
+                        icon = null, // TODO: get from _self
+                        labels = new VRCExpressionsMenu.Control.Label[] { },
+                        name = $"Dance {animationId}", // TODO: get from _self
+                        parameter = new VRCExpressionsMenu.Control.Parameter()
+                        {
+                            name = _paramSendAnimId.Name,
+                        },
+                        style = VRCExpressionsMenu.Control.Style.Style4,
+                        type = VRCExpressionsMenu.Control.ControlType.Toggle,
+                        value = animationId,
+                    };
+                }).ToList();
+                AssetDatabase.CreateAsset(vrcMenu, $"{assetFolder}/OSD_Menu_{pageId}.asset");
             }
         }
     }
