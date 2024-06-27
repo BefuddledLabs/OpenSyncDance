@@ -179,7 +179,7 @@ namespace OpenSyncDance
         {
             // Destroy children >:)
             // TODO: add method to keep certain objects for e.g. props that may be used
-            var contactContainer = _self.transform.Find("OSD_Contacts").gameObject;
+            var contactContainer = _self.transform.Find("OSD_Contacts")?.gameObject;
             if (contactContainer != null)
                 DestroyImmediate(contactContainer);
 
