@@ -2,7 +2,7 @@
 
 using AnimatorAsCode.V1;
 
-namespace OpenSyncDance
+namespace BefuddledLabs.OpenSyncDance
 {
     /// <summary>
     /// Wraps around the common interface of state machines and layers to make generating search trees easier.

@@ -1,0 +1,18 @@
+{
+    "name": "befuddledlabs.opensyncdance",
+    "rootNamespace": "BefuddledLabs.OpenSyncDance",
+    "references": [
+        "GUID:d689052aa981bf8459346a530f6e6678",
+        "GUID:71d9dcc7d30ab1c45866d01afa59b6cf",
+        "GUID:5718fb738711cd34ea54e9553040911d"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

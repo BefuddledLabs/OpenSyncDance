@@ -10,7 +10,7 @@ using UnityEngine;
 using VRC.SDK3.Dynamics.Contact.Components;
 using VRC.SDKBase;
 
-namespace OpenSyncDance
+namespace BefuddledLabs.OpenSyncDance
 {
 
     [Serializable]

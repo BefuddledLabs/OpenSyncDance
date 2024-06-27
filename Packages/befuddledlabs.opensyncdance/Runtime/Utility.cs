@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using AnimatorAsCode.V1;
 
-namespace OpenSyncDance
+namespace BefuddledLabs.OpenSyncDance
 {
     static class Utils
     {
