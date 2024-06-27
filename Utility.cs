@@ -29,6 +29,7 @@ namespace OpenSyncDance
         /// </summary>
         static public void CreateBinarySearchTree(IAacFlMachineLayerWrapper parent, AacFlBoolParameterGroup boolParams, int bitCount, ref List<AacFlState> states, int depth = 1) {
             var boolParamsList = boolParams.ToList();
+            boolParamsList.Reverse();
             if (depth >= bitCount) {
                 var zero = parent.NewState("0");
                 var one = parent.NewState("1");

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using AnimatorAsCode.V1;
+using AnimatorAsCode.V1.VRC;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -54,7 +55,7 @@ namespace OpenSyncDance
         /// <summary>
         /// Do we use write defaults? Yeag or nope?
         /// </summary>
-        public bool useWriteDefaults;
+        public bool useWriteDefaults = true;
 
         /// <summary>
         /// The animator controller that we will be generating.
@@ -187,8 +188,8 @@ namespace OpenSyncDance
             contactContainer = new GameObject("OSD_Contacts");
             contactContainer.transform.parent = _self.transform;
 
-            var contentReceivers = new List<VRCContactReceiver>();
-            var contentSenders = new List<VRCContactSender>();
+            var contactReceivers = new List<VRCContactReceiver>();
+            var contactSenders = new List<VRCContactSender>();
 
             var recvParamNames = _paramRecvBits.ToList();
             for (int i = 0; i < _numberOfBits; i++)
@@ -203,10 +204,10 @@ namespace OpenSyncDance
                 var contactSender = sendContact.AddComponent<VRCContactSender>();
 
                 // We want the sender to be off by default
-                contactSender.enabled = false;
+                sendContact.SetActive(false);
 
-                contentReceivers.Add(contactReceiver);
-                contentSenders.Add(contactSender);
+                contactReceivers.Add(contactReceiver);
+                contactSenders.Add(contactSender);
 
                 contactReceiver.allowOthers = true;
                 contactReceiver.allowSelf = true;
@@ -214,7 +215,7 @@ namespace OpenSyncDance
                 contactReceiver.parameter = recvParamNames[i].Name;
 
                 contactSender.collisionTags.Add(recvParamNames[i].Name);
-                contactSender.enabled = false;
+                contactSender.radius = 5;
             }
 
             // TODO: move this to function idk whatever
@@ -224,36 +225,91 @@ namespace OpenSyncDance
                 var exitState = _sendLayer.NewState("Done");
 
                 readyState.TransitionsFromEntry();
-                exitState.Exits();
+                exitState.Exits().Automatically();
 
-                for (int i = 0; i < _animations.Count; i++)
+                for (int i = 1; i < _animations.Count+1; i++)
                 {
+                    var currentSyncedAnimation = _animations[i-1];
                     // TODO: add animation that toggles the senders
-                    var danceState = _sendLayer.NewState($"Dance {i}");
+                    var danceState = _sendLayer.NewState($"Dance {(currentSyncedAnimation.animation == null ? i : currentSyncedAnimation.animation.name)}");
+                    var musicState = _sendLayer.NewState($"Music {(currentSyncedAnimation.audio == null ? i : currentSyncedAnimation.audio.name)}");
+
+                    if (currentSyncedAnimation.audio != null) 
+                    {
+                        musicState.Audio(_audioSource,
+                            (a) => {
+                                a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
+                                    new[] { currentSyncedAnimation.audio });
+                                a.PlayAudio.PlayOnEnter = true;
+                                a.PlayAudio.StopOnExit = true;
+                                a.SetsLooping();
+                            });
+                    }
 
                     readyState.TransitionsTo(danceState).When(_paramSendAnimId.IsEqualTo(i));
-                    danceState.TransitionsTo(exitState).When(_paramSendAnimId.IsNotEqualTo(i));
+                    var musicConditions = danceState.TransitionsTo(musicState).WhenConditions();
+                    
+                    // Ew
+                    var toggleClip = _aac.NewClip().Animating(a => {
+                        for (int j = 0; j < recvParamNames.Count; j++) 
+                        {
+                            var wantedParamState = (i & (1 << j)) > 0;
+                            musicConditions = musicConditions.And(recvParamNames[j].IsEqualTo(wantedParamState));
+                            a.Animates(contactSenders[j].gameObject).WithOneFrame(wantedParamState ? 1 : 0);
+                        }
+                    });
+                    
+                    danceState.WithAnimation(toggleClip);
+                    musicState.WithAnimation(toggleClip);
+                    
+                    musicState.TransitionsTo(exitState).When(_paramSendAnimId.IsNotEqualTo(i));
                 }
             }
 
             {   // This is scoped so we can use nicer variable names
                 var readyState = _recvLayer.NewState("Ready");
                 var danceState = _recvLayer.NewSubStateMachine("Dance");
+                var doneState = _recvLayer.NewState("Done");
+                
+                // Why isn't there an "All"
+                doneState.TrackingTracks(AacAv3.Av3TrackingElement.Head);
+                doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftHand);
+                doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightHand);
+                doneState.TrackingTracks(AacAv3.Av3TrackingElement.Hip);
+                doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftFoot);
+                doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightFoot);
+                doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftFingers);
+                doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightFingers);
+                doneState.TrackingTracks(AacAv3.Av3TrackingElement.Eyes);
+                doneState.TrackingTracks(AacAv3.Av3TrackingElement.Mouth);
+                
+                doneState.Exits().Automatically();
 
                 // Transition to dance blend tree whenever an animation is triggered
                 readyState.TransitionsFromEntry();
                 readyState.TransitionsTo(danceState).When(_paramRecvBits.IsAnyTrue());
-                danceState.TransitionsTo(readyState); 
+                danceState.TransitionsTo(doneState); 
 
                 var animationStates = new List<AacFlState>();
                 Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(danceState), _paramRecvBits, _numberOfBits, ref animationStates);
 
-                for (int i = 1; i < _animations.Count; i++)
+                for (int i = 1; i < _animations.Count+1; i++)
                 {
                     var currentState = animationStates[i];
-                    var currentSyncedAnimation = _animations[i];
-                    if (currentSyncedAnimation.animation != null)
+                    var currentSyncedAnimation = _animations[i-1];
+                    if (currentSyncedAnimation.animation != null) {
                         currentState.WithAnimation(currentSyncedAnimation.animation);
+                        currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Head);
+                        currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftHand);
+                        currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightHand);
+                        currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Hip);
+                        currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFoot);
+                        currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFoot);
+                        currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFingers);
+                        currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFingers);
+                        currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Eyes);
+                        currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Mouth);
+                    }
                 }
             }
         }
