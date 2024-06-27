@@ -60,7 +60,12 @@ namespace OpenSyncDance
         /// <summary>
         /// The animator controller that we will be generating.
         /// </summary>
-        public AnimatorController assetContainer;
+        public AnimatorController animatorControllerFX;
+        
+        /// <summary>
+        /// The animator controller that we will be generating.
+        /// </summary>
+        public AnimatorController animatorControllerAction;
 
         /// <summary>
         /// The animations that we want to sync!
@@ -116,7 +121,7 @@ namespace OpenSyncDance
         /// </summary>
         private AudioSource _audioSource => _self.GetComponentInChildren<AudioSource>();
 
-        private AnimatorController _animationController => _self.assetContainer;
+        private AnimatorController _animationController => _self.animatorControllerFX;
         private AacFlBoolParameterGroup _paramRecvBits;
         private AacFlBoolParameterGroup _paramSendBits;
         private AacFlIntParameter _paramSendAnimId;
@@ -132,7 +137,10 @@ namespace OpenSyncDance
         {
             serializedObject.Update();
 
-            var assetContainer_property = serializedObject.FindProperty("assetContainer");
+            var assetContainer_property = serializedObject.FindProperty("animatorControllerFX");
+            EditorGUILayout.PropertyField(assetContainer_property, true);
+            
+            assetContainer_property = serializedObject.FindProperty("animatorControllerAction");
             EditorGUILayout.PropertyField(assetContainer_property, true);
 
             var animation_property = serializedObject.FindProperty("animations");
@@ -164,7 +172,7 @@ namespace OpenSyncDance
                 DefaultsProvider = new AacDefaultsProvider(_self.useWriteDefaults),
             });
 
-            _recvLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationController, "recvLayer");
+            _recvLayer = _aac.CreateSupportingArbitraryControllerLayer(_self.animatorControllerAction, "recvLayer");
             _sendLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationController, "sendLayer");
 
             // Create the parameters for recieving the animation index;
@@ -172,6 +180,7 @@ namespace OpenSyncDance
             for (int i = 0; i < _numberOfBits; i++)
                 receiveParamNames.Add(string.Format(_recvBitParamName, i));
             _paramRecvBits = _recvLayer.BoolParameters(receiveParamNames.ToArray());
+            _sendLayer.BoolParameters(receiveParamNames.ToArray()); // Ugly thing to get the same params on the Action animator
 
             _paramSendAnimId = _sendLayer.IntParameter(_sendAnimIdName);
         }
@@ -213,6 +222,7 @@ namespace OpenSyncDance
                 contactReceiver.allowSelf = true;
                 contactReceiver.collisionTags.Add(recvParamNames[i].Name);
                 contactReceiver.parameter = recvParamNames[i].Name;
+                contactReceiver.radius = 5;
 
                 contactSender.collisionTags.Add(recvParamNames[i].Name);
                 contactSender.radius = 5;
@@ -225,7 +235,7 @@ namespace OpenSyncDance
                 var exitState = _sendLayer.NewState("Done");
 
                 readyState.TransitionsFromEntry();
-                exitState.Exits().Automatically();
+                exitState.Exits().Automatically().WithTransitionDurationSeconds(0.5f);
 
                 for (int i = 1; i < _animations.Count+1; i++)
                 {
@@ -234,6 +244,7 @@ namespace OpenSyncDance
                     var danceState = _sendLayer.NewState($"Dance {(currentSyncedAnimation.animation == null ? i : currentSyncedAnimation.animation.name)}");
                     var musicState = _sendLayer.NewState($"Music {(currentSyncedAnimation.audio == null ? i : currentSyncedAnimation.audio.name)}");
 
+                    // Set the audio clip on the audio source
                     if (currentSyncedAnimation.audio != null) 
                     {
                         musicState.Audio(_audioSource,
@@ -249,7 +260,7 @@ namespace OpenSyncDance
                     readyState.TransitionsTo(danceState).When(_paramSendAnimId.IsEqualTo(i));
                     var musicConditions = danceState.TransitionsTo(musicState).WhenConditions();
                     
-                    // Ew
+                    // Ew: Toggles the bits for the animations
                     var toggleClip = _aac.NewClip().Animating(a => {
                         for (int j = 0; j < recvParamNames.Count; j++) 
                         {
@@ -271,7 +282,7 @@ namespace OpenSyncDance
                 var danceState = _recvLayer.NewSubStateMachine("Dance");
                 var doneState = _recvLayer.NewState("Done");
                 
-                // Why isn't there an "All"
+                // Ugly thing to not IK sync the animation
                 doneState.TrackingTracks(AacAv3.Av3TrackingElement.Head);
                 doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftHand);
                 doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightHand);
@@ -282,6 +293,9 @@ namespace OpenSyncDance
                 doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightFingers);
                 doneState.TrackingTracks(AacAv3.Av3TrackingElement.Eyes);
                 doneState.TrackingTracks(AacAv3.Av3TrackingElement.Mouth);
+
+                danceState.PlayableEnables(VRC_PlayableLayerControl.BlendableLayer.Action);
+                doneState.PlayableDisables(VRC_PlayableLayerControl.BlendableLayer.Action);
                 
                 doneState.Exits().Automatically();
 
@@ -297,8 +311,11 @@ namespace OpenSyncDance
                 {
                     var currentState = animationStates[i];
                     var currentSyncedAnimation = _animations[i-1];
-                    if (currentSyncedAnimation.animation != null) {
+                    if (currentSyncedAnimation.animation != null) 
+                    {
                         currentState.WithAnimation(currentSyncedAnimation.animation);
+                        
+                        // Ugly thing to turn IK sync back on
                         currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Head);
                         currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftHand);
                         currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightHand);
