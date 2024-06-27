@@ -187,8 +187,8 @@ namespace OpenSyncDance
             contactContainer = new GameObject("OSD_Contacts");
             contactContainer.transform.parent = _self.transform;
 
-            List<VRCContactReceiver> _contentReceivers = new List<VRCContactReceiver>();
-            List<VRCContactSender> _contentSenders = new List<VRCContactSender>();
+            var contentReceivers = new List<VRCContactReceiver>();
+            var contentSenders = new List<VRCContactSender>();
 
             var recvParamNames = _paramRecvBits.ToList();
             for (int i = 0; i < _numberOfBits; i++)
@@ -205,8 +205,8 @@ namespace OpenSyncDance
                 // We want the sender to be off by default
                 contactSender.enabled = false;
 
-                _contentReceivers.Add(contactReceiver);
-                _contentSenders.Add(contactSender);
+                contentReceivers.Add(contactReceiver);
+                contentSenders.Add(contactSender);
 
                 contactReceiver.allowOthers = true;
                 contactReceiver.allowSelf = true;
@@ -220,33 +220,33 @@ namespace OpenSyncDance
             // TODO: move this to function idk whatever
             {   // This is scoped so we can use nicer variable names
 
-                var ready_state = _sendLayer.NewState("Ready");
-                var exit_state = _sendLayer.NewState("Done");
+                var readyState = _sendLayer.NewState("Ready");
+                var exitState = _sendLayer.NewState("Done");
 
-                ready_state.TransitionsFromEntry();
-                exit_state.Exits();
+                readyState.TransitionsFromEntry();
+                exitState.Exits();
 
                 for (int i = 0; i < _animations.Count; i++)
                 {
                     // TODO: add animation that toggles the senders
-                    var dance_state = _sendLayer.NewState($"Dance {i}");
+                    var danceState = _sendLayer.NewState($"Dance {i}");
 
-                    ready_state.TransitionsTo(dance_state).When(_paramSendAnimId.IsEqualTo(i));
-                    dance_state.TransitionsTo(exit_state).When(_paramSendAnimId.IsNotEqualTo(i));
+                    readyState.TransitionsTo(danceState).When(_paramSendAnimId.IsEqualTo(i));
+                    danceState.TransitionsTo(exitState).When(_paramSendAnimId.IsNotEqualTo(i));
                 }
             }
 
             {   // This is scoped so we can use nicer variable names
-                var ready_state = _recvLayer.NewState("Ready");
-                var dance_state = _recvLayer.NewSubStateMachine("Dance");
+                var readyState = _recvLayer.NewState("Ready");
+                var danceState = _recvLayer.NewSubStateMachine("Dance");
 
-                // Transition to dance blend tree whenever we an animation is triggered
-                ready_state.TransitionsFromEntry();
-                ready_state.TransitionsTo(dance_state).When(_paramRecvBits.IsAnyTrue());
-                dance_state.TransitionsTo(ready_state); 
+                // Transition to dance blend tree whenever an animation is triggered
+                readyState.TransitionsFromEntry();
+                readyState.TransitionsTo(danceState).When(_paramRecvBits.IsAnyTrue());
+                danceState.TransitionsTo(readyState); 
 
                 var animationStates = new List<AacFlState>();
-                Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(dance_state), _paramRecvBits, _numberOfBits, ref animationStates);
+                Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(danceState), _paramRecvBits, _numberOfBits, ref animationStates);
 
                 for (int i = 1; i < _animations.Count; i++)
                 {
