@@ -5,11 +5,7 @@ using System.Collections.Generic;
 using AnimatorAsCode.V1;
 using UnityEditor;
 using UnityEditor.Animations;
-using UnityEditor.UIElements;
-using UnityEditor.VersionControl;
 using UnityEngine;
-using UnityEngine.UIElements;
-using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Dynamics.Contact.Components;
 using VRC.SDKBase;
 
@@ -104,17 +100,25 @@ namespace OpenSyncDance
         private int _numberOfBits => Utils.NumberOfBitsToRepresent(_animations.Count);
 
         /// <summary>
-        /// Parameter name of the contact receiver. This value needs to be formatted with <tt>string.Format</tt>.
+        /// Parameter format of the contact bit receiver. This value needs to be formatted with <tt>string.Format</tt>.
         /// </summary>
-        private string _recvParamName = "OSD_RecvBit{0}";
+        private string _recvBitParamName = "OSD_RecvBit{0}";
 
         /// <summary>
-        /// Parameter name of the contact sender. This value needs to be formatted with <tt>string.Format</tt>.
+        /// Parameter name of the animation id that we want to broadcast.
         /// </summary>
-        private string _sendParamName = "OSD_SendBit{0}";
+        private string _sendAnimIdName = "OSD_SendAnim";
+
+        // TODO: make this a variable that you can set from ui whatever idk??? lol --nara
+        /// <summary>
+        /// Component that gets plays the audio.
+        /// </summary>
+        private AudioSource _audioSource => _self.GetComponentInChildren<AudioSource>();
+
         private AnimatorController _animationController => _self.assetContainer;
         private AacFlBoolParameterGroup _paramRecvBits;
         private AacFlBoolParameterGroup _paramSendBits;
+        private AacFlIntParameter _paramSendAnimId;
 
         private void OnEnable()
         {
@@ -159,48 +163,47 @@ namespace OpenSyncDance
                 DefaultsProvider = new AacDefaultsProvider(_self.useWriteDefaults),
             });
 
-            _recvLayer = _aac.CreateMainArbitraryControllerLayer(_animationController);
-            _sendLayer = _aac.CreateMainArbitraryControllerLayer(_animationController);
+            _recvLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationController, "recvLayer");
+            _sendLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationController, "sendLayer");
 
             // Create the parameters for recieving the animation index;
             var receiveParamNames = new List<string>();
             for (int i = 0; i < _numberOfBits; i++)
-                receiveParamNames.Add(string.Format(_recvParamName, i));
+                receiveParamNames.Add(string.Format(_recvBitParamName, i));
             _paramRecvBits = _recvLayer.BoolParameters(receiveParamNames.ToArray());
 
-            // Create the parameters for sending the animation index;
-            var sendParamNames = new List<string>();
-            for (int i = 0; i < _numberOfBits; i++)
-                sendParamNames.Add(string.Format(_sendParamName, i));
-            _paramSendBits = _sendLayer.BoolParameters(sendParamNames.ToArray());
+            _paramSendAnimId = _sendLayer.IntParameter(_sendAnimIdName);
         }
 
         private void Generate()
         {
             // Destroy children >:)
             // TODO: add method to keep certain objects for e.g. props that may be used
-            while (_self.transform.childCount > 0)
-                DestroyImmediate(_self.transform.GetChild(0).gameObject);
+            var contactContainer = _self.transform.Find("OSD_Contacts").gameObject;
+            if (contactContainer != null)
+                DestroyImmediate(contactContainer);
 
             // Create contacts root object to hold
-            var contactContainer = new GameObject("OSD_Contacts");
+            contactContainer = new GameObject("OSD_Contacts");
             contactContainer.transform.parent = _self.transform;
 
             List<VRCContactReceiver> _contentReceivers = new List<VRCContactReceiver>();
             List<VRCContactSender> _contentSenders = new List<VRCContactSender>();
 
             var recvParamNames = _paramRecvBits.ToList();
-            var sendParamNames = _paramSendBits.ToList();
             for (int i = 0; i < _numberOfBits; i++)
             {
                 var recvContact = new GameObject(recvParamNames[i].Name);
-                var sendContact = new GameObject(sendParamNames[i].Name);
+                var sendContact = new GameObject($"Send{i}");
 
                 recvContact.transform.parent = contactContainer.transform;
                 sendContact.transform.parent = contactContainer.transform;
 
                 var contactReceiver = recvContact.AddComponent<VRCContactReceiver>();
                 var contactSender = sendContact.AddComponent<VRCContactSender>();
+
+                // We want the sender to be off by default
+                contactSender.enabled = false;
 
                 _contentReceivers.Add(contactReceiver);
                 _contentSenders.Add(contactSender);
@@ -214,18 +217,45 @@ namespace OpenSyncDance
                 contactSender.enabled = false;
             }
 
-            // layers:
-            // - send layer
-            //   - broadcasts animation id via contacts
-            //   - encoded as binary
-            // - receive layer
-            //   - detects broadcasted animation id via contacts
-            //   - also detects own broadcast to account for round-trip-latency for better sync
-            // - config layer
-            //   - used blendtrees to enable and disable stuff
+            // TODO: move this to function idk whatever
+            {   // This is scoped so we can use nicer variable names
 
+                var ready_state = _sendLayer.NewState("Ready");
+                var exit_state = _sendLayer.NewState("Done");
 
-            // Enocde binary animation to toggle senders
+                ready_state.TransitionsFromEntry();
+                exit_state.Exits();
+
+                for (int i = 0; i < _animations.Count; i++)
+                {
+                    // TODO: add animation that toggles the senders
+                    var dance_state = _sendLayer.NewState($"Dance {i}");
+
+                    ready_state.TransitionsTo(dance_state).When(_paramSendAnimId.IsEqualTo(i));
+                    dance_state.TransitionsTo(exit_state).When(_paramSendAnimId.IsNotEqualTo(i));
+                }
+            }
+
+            {   // This is scoped so we can use nicer variable names
+                var ready_state = _recvLayer.NewState("Ready");
+                var dance_state = _recvLayer.NewSubStateMachine("Dance");
+
+                // Transition to dance blend tree whenever we an animation is triggered
+                ready_state.TransitionsFromEntry();
+                ready_state.TransitionsTo(dance_state).When(_paramRecvBits.IsAnyTrue());
+                dance_state.TransitionsTo(ready_state); 
+
+                var animationStates = new List<AacFlState>();
+                Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(dance_state), _paramRecvBits, _numberOfBits, ref animationStates);
+
+                for (int i = 1; i < _animations.Count; i++)
+                {
+                    var currentState = animationStates[i];
+                    var currentSyncedAnimation = _animations[i];
+                    if (currentSyncedAnimation.animation != null)
+                        currentState.WithAnimation(currentSyncedAnimation.animation);
+                }
+            }
         }
     }
 }
