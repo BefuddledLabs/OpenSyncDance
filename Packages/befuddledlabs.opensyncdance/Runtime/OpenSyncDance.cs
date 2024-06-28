@@ -124,7 +124,27 @@ namespace BefuddledLabs.OpenSyncDance
         /// <summary>
         /// The animations that we want to sync!
         /// </summary>
-        public List<SyncedAnimation> animations = new List<SyncedAnimation>();
+        public List<SyncedAnimation> animations = new();
+
+        /// <summary>
+        /// The VRC parameter asset that we will overwrite. If not set, will generate a new one.
+        /// </summary>
+        [NonReorderable]
+        public VRCExpressionParameters vrcExpressionParameters;
+
+        /// <summary>
+        /// The VRC menu assets that we will overwrite. If not set, will generate a new one.
+        /// </summary>
+        public List<VRCExpressionsMenu> vrcExpressionMenus = new();
+
+        /// <summary>
+        /// Makes sure that the required classes are initialized.
+        /// </summary>
+        public void EnsureInitialized()
+        {
+            animations ??= new();
+            vrcExpressionMenus ??= new();
+        }
     }
 
     [CustomEditor(typeof(OpenSyncDance))]
@@ -159,6 +179,18 @@ namespace BefuddledLabs.OpenSyncDance
         /// </summary>
         private List<SyncedAnimation> _animations => _self.animations;
 
+        private VRCExpressionParameters _vrcParams
+        {
+            get => _self.vrcExpressionParameters;
+            set => _self.vrcExpressionParameters = value;
+        }
+
+        private List<VRCExpressionsMenu> _vrcMenus
+        {
+            get => _self.vrcExpressionMenus;
+            set => _self.vrcExpressionMenus = value;
+        }
+
         /// <summary>
         /// The number of bits that are used to sync with other players.
         /// </summary>
@@ -185,7 +217,6 @@ namespace BefuddledLabs.OpenSyncDance
         /// </summary>
         private AudioSource _audioSource => _self.GetComponentInChildren<AudioSource>();
 
-
         private List<VRCContactReceiver> _contactReceivers;
         private List<VRCContactSender> _contactSenders;
 
@@ -194,6 +225,8 @@ namespace BefuddledLabs.OpenSyncDance
         private AacFlBoolParameterGroup _paramSendBits;
         private AacFlIntParameter _paramSendAnimId;
         private AacFlBoolParameterGroup _paramSendAnimIdBits;
+
+        bool _uiAdvancedFoldoutState = false;
 
         private void OnEnable()
         {
@@ -204,6 +237,9 @@ namespace BefuddledLabs.OpenSyncDance
 
         public override void OnInspectorGUI()
         {
+            // Make sure it's initialized, other wise we might check null variables!
+            _self.EnsureInitialized();
+
             serializedObject.Update();
 
             var contactPrefix_property = serializedObject.FindProperty("contactPrefix");
@@ -218,9 +254,29 @@ namespace BefuddledLabs.OpenSyncDance
             var animation_property = serializedObject.FindProperty("animations");
             EditorGUILayout.PropertyField(animation_property, true);
 
+            // Advanced settings for smarty pants. You probably don't need this.
+            if(_uiAdvancedFoldoutState = EditorGUILayout.BeginFoldoutHeaderGroup(_uiAdvancedFoldoutState, "Advanced"))
+            {
+                var guidPoperty = serializedObject.FindProperty("assetKey");
+                EditorGUILayout.PropertyField(guidPoperty, true);
+
+                var vrcParamsProperty = serializedObject.FindProperty("vrcExpressionParameters");
+                EditorGUILayout.PropertyField(vrcParamsProperty, true);
+
+                EditorGUILayout.EndFoldoutHeaderGroup();
+
+                var vrcMenuProperty = serializedObject.FindProperty("vrcExpressionMenus");
+                EditorGUILayout.PropertyField(vrcMenuProperty, true);
+            }
+            else
+            {
+                EditorGUILayout.EndFoldoutHeaderGroup();
+            }
+
+
             serializedObject.ApplyModifiedProperties();
 
-            if (GUILayout.Button("AAA"))
+            if (GUILayout.Button("Generate!"))
             {
                 // TODO: create new animation controller if it doesn't exist
                 if (!_animationControllerFX)
@@ -232,6 +288,11 @@ namespace BefuddledLabs.OpenSyncDance
                 CreateMenu();
                 Generate();
             }
+
+            if (_self.vrcExpressionParameters)
+                EditorGUILayout.HelpBox("Expression parameter is set, this will be overwritten which may remove any previous set parameters!", MessageType.Info);
+            if (_self.vrcExpressionMenus == null || _self.vrcExpressionMenus.Count > 0)
+                EditorGUILayout.HelpBox("Expression menus are set, this will be overwritten which may remove any previous set parameters!", MessageType.Info);
         }
 
         private void AnimatorSetup()
@@ -497,7 +558,9 @@ namespace BefuddledLabs.OpenSyncDance
             var assetFolder = string.Join('/', assetFolderPath);
 
             // Create VRC params asset
-            var vrcParams = CreateOrLoadAsset<VRCExpressionParameters>($"{assetFolder}/OSD_Params.asset");
+            if (!_vrcParams)
+                _vrcParams = CreateOrLoadAsset<VRCExpressionParameters>($"{assetFolder}/OSD_Params.asset");
+
             //vrcParams.parameters 
             var tempParams = new List<VRCExpressionParameters.Parameter> {
                 new() {
@@ -520,19 +583,25 @@ namespace BefuddledLabs.OpenSyncDance
                 });
             }
 
-            vrcParams.parameters = tempParams.ToArray();
+            _vrcParams.parameters = tempParams.ToArray();
 
-            // Create VRC menu assets
+            // Ensure we have enough menus
+            for (int pageId = 0; pageId < numPages; pageId++)
+            {
+                if (_vrcMenus.Count <= pageId)
+                    _vrcMenus.Add(null);
+                _vrcMenus[pageId] = CreateOrLoadAsset<VRCExpressionsMenu>($"{assetFolder}/OSD_Menu_{pageId}.asset");
+            }
+
+            // Setup menus
             for (int pageId = 0, animationId = 0; pageId < numPages; pageId++)
             {
                 bool isLastPage = pageId == numPages - 1;
                 int animsOnThisPage = animsPerPage + (isLastPage ? 1 : 0);
-                
-                var vrcMenu = CreateOrLoadAsset<VRCExpressionsMenu>($"{assetFolder}/OSD_Menu_{pageId}.asset");
 
                 // Skip animations that we already put in pages, then take enough to fill the page.
                 // Map the taken items to a VRC menu button.
-                vrcMenu.controls = _animations.Skip(animsPerPage * pageId).Take(animsOnThisPage).Select((SyncedAnimation anim) =>
+                _vrcMenus[pageId].controls = _animations.Skip(animsPerPage * pageId).Take(animsOnThisPage).Select((SyncedAnimation anim) =>
                 {
                     animationId++;
                     return new VRCExpressionsMenu.Control
