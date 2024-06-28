@@ -35,7 +35,7 @@ namespace BefuddledLabs.OpenSyncDance
             int oldIndent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = 0;
 
-            EditorGUI.DrawRect(new Rect(space.x, space.y, space.width, 2), Color.grey);
+            EditorGUI.DrawRect(new Rect(space.x, space.y, space.width, 2), new Color32(0x11, 0x00, 0x02, 0xFF));
             space.y += 8;
 
             //        44    12            16
@@ -59,16 +59,37 @@ namespace BefuddledLabs.OpenSyncDance
             Rect volRect = new(space.x + space.width + 16, space.y, space.width, 20);
 
             EditorGUIUtility.labelWidth = 50;
-
+            
             EditorGUI.PropertyField(iconRect, property.FindPropertyRelative("icon"), GUIContent.none);
-            EditorGUI.PropertyField(nameRect, property.FindPropertyRelative("name"), new GUIContent("Name"));
-            EditorGUI.PropertyField(animRect, property.FindPropertyRelative("animation"), new GUIContent("Anim"));
-            EditorGUI.PropertyField(audioRect, property.FindPropertyRelative("audio"), new GUIContent("Audio"));
-            EditorGUI.Slider(volRect, property.FindPropertyRelative("volume"), 0, 1, "Volume");
+            
+            GUIStyle labelStyle = new GUIStyle(EditorStyles.label);
+            labelStyle.normal.textColor = new Color32(0xE2, 0x6C, 0xD7, 0xFF);
+            DrawPropertyFieldWithLabel(nameRect, property.FindPropertyRelative("name"), "Name", labelStyle);
+            DrawPropertyFieldWithLabel(animRect, property.FindPropertyRelative("animation"), "Anim", labelStyle);
+            
+            labelStyle.normal.textColor = new Color32(0x97, 0x29, 0xFC, 0xFF);
+            DrawPropertyFieldWithLabel(audioRect, property.FindPropertyRelative("audio"), "Audio", labelStyle);
+            SliderFieldWithLabel(volRect, property.FindPropertyRelative("volume"), 0, 1, "Volume", labelStyle);
 
             EditorGUI.EndProperty();
 
             EditorGUI.indentLevel = oldIndent;
+        }
+        
+        private void DrawPropertyFieldWithLabel(Rect rect, SerializedProperty property, string label, GUIStyle labelStyle)
+        {
+            EditorGUI.LabelField(rect, label, labelStyle);
+            rect.x += EditorGUIUtility.labelWidth;
+            rect.width -= EditorGUIUtility.labelWidth;
+            EditorGUI.PropertyField(rect, property, GUIContent.none);
+        }
+        
+        private void SliderFieldWithLabel(Rect rect, SerializedProperty property, float leftValue, float rightValue, string label, GUIStyle labelStyle)
+        {
+            EditorGUI.LabelField(rect, label, labelStyle);
+            rect.x += EditorGUIUtility.labelWidth;
+            rect.width -= EditorGUIUtility.labelWidth;
+            EditorGUI.Slider(rect, property, leftValue, rightValue, GUIContent.none);
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
