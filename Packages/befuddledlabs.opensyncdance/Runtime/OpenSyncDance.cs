@@ -413,7 +413,6 @@ namespace BefuddledLabs.OpenSyncDance
             }
         }
 
-
         private void Generate()
         {
             // Destroy children >:)
