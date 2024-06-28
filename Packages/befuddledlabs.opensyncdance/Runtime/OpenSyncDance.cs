@@ -204,6 +204,8 @@ namespace BefuddledLabs.OpenSyncDance
                 // TODO: create new animation controller if it doesn't exist
                 if (!_animationControllerFX)
                     throw new ArgumentNullException();
+                if (!_self.animatorControllerAction)
+                    throw new ArgumentNullException();
 
                 AnimatorSetup();
                 CreateMenu();
