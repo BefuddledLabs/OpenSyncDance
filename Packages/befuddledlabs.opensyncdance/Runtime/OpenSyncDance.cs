@@ -18,8 +18,11 @@ namespace BefuddledLabs.OpenSyncDance
     [Serializable]
     public class SyncedAnimation
     {
+        public Texture2D icon;
+        public string name;
         public AnimationClip animation;
         public AudioClip audio;
+        public float volume = 1f; // TODO: for some reason adding a new anim to the list doesn't set volume to 1
     }
 
     [CustomPropertyDrawer(typeof(SyncedAnimation))]
@@ -32,17 +35,46 @@ namespace BefuddledLabs.OpenSyncDance
             int oldIndent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = 0;
 
-            // TODO: this renders like peepee poopoo
-            // space = EditorGUI.PrefixLabel(space, GUIUtility.GetControlID(FocusType.Passive), label);
+            EditorGUI.DrawRect(new Rect(space.x, space.y, space.width, 2), Color.grey);
+            space.y += 8;
 
-            float halfWidth = space.width / 2f;
-            EditorGUI.PropertyField(new Rect(space.x, space.y, halfWidth, space.height), property.FindPropertyRelative("animation"), GUIContent.none);
-            space.x += halfWidth;
-            EditorGUI.PropertyField(new Rect(space.x, space.y, halfWidth, space.height), property.FindPropertyRelative("audio"), GUIContent.none);
+            //        44    12            16
+            //      ┌───────┬─┐           ┌┐
+            //    ┌ ┌───────┬─┐┌────────┬─┐┌────────┬─┐ ┐
+            //    │ │Icon   │ ││Name    │o││Anim    │o│ │ 20
+            // 44 │ │       │O│├────────┼─┤├────────┼─┤ ┤  4 (not shown)
+            //    │ │       │ ││Audio   │o││Volume  │o│ │ 20
+            //    └ └───────┴─┘└────────┴─┘└────────┴─┘ ┘
+            //      └─────────┘└──────────────────────┘
+            //         56         (width - 56 - 16) / 2
+
+            Rect iconRect = new(space.x, space.y, 56, 44);
+            space.x += 60;
+            space.width = (space.width - 16 - 60) / 2;
+
+            Rect nameRect = new(space.x, space.y, space.width, 20);
+            Rect animRect = new(space.x + space.width + 16, space.y, space.width, 20);
+            space.y += 24;
+            Rect audioRect = new(space.x, space.y, space.width, 20);
+            Rect volRect = new(space.x + space.width + 16, space.y, space.width, 20);
+
+            EditorGUIUtility.labelWidth = 50;
+
+            EditorGUI.PropertyField(iconRect, property.FindPropertyRelative("icon"), GUIContent.none);
+            EditorGUI.PropertyField(nameRect, property.FindPropertyRelative("name"), new GUIContent("Name"));
+            EditorGUI.PropertyField(animRect, property.FindPropertyRelative("animation"), new GUIContent("Anim"));
+            EditorGUI.PropertyField(audioRect, property.FindPropertyRelative("audio"), new GUIContent("Audio"));
+            EditorGUI.Slider(volRect, property.FindPropertyRelative("volume"), 0, 1, "Volume");
 
             EditorGUI.EndProperty();
 
             EditorGUI.indentLevel = oldIndent;
+        }
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            // Default height is 20
+            return 56;
         }
     }
 

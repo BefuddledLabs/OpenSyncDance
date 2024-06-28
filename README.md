@@ -13,7 +13,7 @@
 To make modifications to this package:
 
 1. Clone this repository to a non-unity project folder.
-2. In the **Unity** package manager: add package from disk.
+2. Create a symbolic link from the package into a Unity project's package folder.
 3. The package should be editable via Unity and any external editor.
 
 ## Acknowledgements
