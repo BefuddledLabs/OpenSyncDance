@@ -91,11 +91,6 @@ namespace BefuddledLabs.OpenSyncDance
         public string contactPrefix = "OSDDefault_";
 
         /// <summary>
-        /// Do we use write defaults? Yeag or nope?
-        /// </summary>
-        public bool useWriteDefaults = true;
-
-        /// <summary>
         /// The animator controller that we will be generating.
         /// </summary>
         public AnimatorController animatorControllerFX;
@@ -193,10 +188,10 @@ namespace BefuddledLabs.OpenSyncDance
             var contactPrefix_property = serializedObject.FindProperty("contactPrefix");
             EditorGUILayout.PropertyField(contactPrefix_property, true);
 
-            var assetContainer_property = serializedObject.FindProperty("animatorControllerFX");
+            var assetContainer_property = serializedObject.FindProperty("animatorControllerAction");
             EditorGUILayout.PropertyField(assetContainer_property, true);
 
-            assetContainer_property = serializedObject.FindProperty("animatorControllerAction");
+            assetContainer_property = serializedObject.FindProperty("animatorControllerFX");
             EditorGUILayout.PropertyField(assetContainer_property, true);
 
             var animation_property = serializedObject.FindProperty("animations");
@@ -226,14 +221,16 @@ namespace BefuddledLabs.OpenSyncDance
                 AssetKey = _self.assetKey,
                 AssetContainer = _animationControllerFX,
                 ContainerMode = AacConfiguration.Container.Everything,
-                DefaultsProvider = new AacDefaultsProvider(_self.useWriteDefaults),
+                DefaultsProvider = new AacDefaultsProvider(true),
             });
+
+            _aac.ClearPreviousAssets();
 
             _recvLayer = _aac.CreateSupportingArbitraryControllerLayer(_self.animatorControllerAction, "recvLayer");
             _sendLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationControllerFX, "sendLayer");
             _bitLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationControllerFX, "BitConverter");
 
-            // Create the parameters for recieving the animation index;
+            // Create the parameters for receiving the animation index;
             var receiveParamNames = new List<string>();
             var paramSendAnimIdBitsNames = new List<string>();
             for (int i = 0; i < _numberOfBits; i++){
@@ -305,6 +302,7 @@ namespace BefuddledLabs.OpenSyncDance
                         {
                             a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
                                 new[] { currentSyncedAnimation.audio });
+                            a.SetsVolume(currentSyncedAnimation.volume);
                             a.PlayAudio.PlayOnEnter = true;
                             a.PlayAudio.StopOnExit = true;
                             a.SetsLooping();
@@ -333,7 +331,7 @@ namespace BefuddledLabs.OpenSyncDance
             }
         }
 
-        private void GenerateRecieveLayer() 
+        private void GenerateReceiveLayer() 
         {
             var readyState = _recvLayer.NewState("Ready");
             var danceState = _recvLayer.NewSubStateMachine("Dance");
@@ -348,7 +346,7 @@ namespace BefuddledLabs.OpenSyncDance
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightFoot);
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftFingers);
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightFingers);
-            doneState.TrackingTracks(AacAv3.Av3TrackingElement.Eyes);
+            //doneState.TrackingTracks(AacAv3.Av3TrackingElement.Eyes); // Most likely don't need to animate the eyes...
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.Mouth);
 
             danceState.PlayableEnables(VRC_PlayableLayerControl.BlendableLayer.Action);
@@ -386,7 +384,7 @@ namespace BefuddledLabs.OpenSyncDance
                     currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFoot);
                     currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFingers);
                     currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFingers);
-                    currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Eyes);
+                    //currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Eyes); // Most likely don't need to animate the eyes...
                     currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Mouth);
                 }
             }
@@ -438,7 +436,23 @@ namespace BefuddledLabs.OpenSyncDance
 
             GenerateSyncedBitLayer();
             GenerateSendLayer();
-            GenerateRecieveLayer();
+            GenerateReceiveLayer();
+        }
+
+        /// <summary>
+        /// Creates or gets an asset from a path
+        /// </summary>
+        private T CreateOrLoadAsset<T>(string path)
+            where T : ScriptableObject 
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (asset != null)
+                return asset;
+
+            asset = CreateInstance<T>();
+            AssetDatabase.CreateAsset(asset, path);
+
+            return asset;
         }
 
         private void CreateMenu()
@@ -461,7 +475,7 @@ namespace BefuddledLabs.OpenSyncDance
             var assetFolder = string.Join('/', assetFolderPath);
 
             // Create VRC params asset
-            var vrcParams = CreateInstance<VRCExpressionParameters>();
+            var vrcParams = CreateOrLoadAsset<VRCExpressionParameters>($"{assetFolder}/OSD_Params.asset");
             //vrcParams.parameters 
             var tempParams = new List<VRCExpressionParameters.Parameter> {
                 new() {
@@ -483,18 +497,16 @@ namespace BefuddledLabs.OpenSyncDance
                     defaultValue = 0,
                 });
             }
+
             vrcParams.parameters = tempParams.ToArray();
-            
-            // TODO: uhmm aksually update this instead of overwriting
-            AssetDatabase.CreateAsset(vrcParams, $"{assetFolder}/OSD_Params.asset");
 
             // Create VRC menu assets
             for (int pageId = 0, animationId = 0; pageId < numPages; pageId++)
             {
                 bool isLastPage = pageId == numPages - 1;
                 int animsOnThisPage = animsPerPage + (isLastPage ? 1 : 0);
-
-                var vrcMenu = CreateInstance<VRCExpressionsMenu>();
+                
+                var vrcMenu = CreateOrLoadAsset<VRCExpressionsMenu>($"{assetFolder}/OSD_Menu_{pageId}.asset");
 
                 // Skip animations that we already put in pages, then take enough to fill the page.
                 // Map the taken items to a VRC menu button.
@@ -503,9 +515,9 @@ namespace BefuddledLabs.OpenSyncDance
                     animationId++;
                     return new VRCExpressionsMenu.Control
                     {
-                        icon = null, // TODO: get from _self
+                        icon = anim.icon,
                         labels = new VRCExpressionsMenu.Control.Label[] { },
-                        name = $"Dance {animationId}", // TODO: get from _self
+                        name = anim.name,
                         parameter = new VRCExpressionsMenu.Control.Parameter()
                         {
                             name = _paramSendAnimId.Name,
@@ -515,10 +527,8 @@ namespace BefuddledLabs.OpenSyncDance
                         value = animationId,
                     };
                 }).ToList();
-
-                // TODO: uhmm aksually update this instead of overwriting
-                AssetDatabase.CreateAsset(vrcMenu, $"{assetFolder}/OSD_Menu_{pageId}.asset");
             }
+            AssetDatabase.SaveAssets();
         }
     }
 }
