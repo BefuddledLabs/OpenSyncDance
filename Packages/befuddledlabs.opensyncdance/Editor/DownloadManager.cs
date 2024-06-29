@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using UnityEditor;
 using UnityEngine;
@@ -43,7 +45,7 @@ namespace BefuddledLabs.OpenSyncDance.Editor
         private static string BinariesPath => BasePath + "/Packages/befuddledlabs.opensyncdance/Binaries";
         
         private const string FFmpegURL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl-shared.zip";
-        private const string YtdlpURL = "https://github.com/yt-dlp/yt-dlp/releases/download/latest/yt-dlp_min.exe";
+        private const string YtdlpURL = "https://github.com/yt-dlp/yt-dlp/releases/download/2024.05.27/yt-dlp_min.exe";
 
         /// <summary>
         /// 0: url
@@ -51,12 +53,22 @@ namespace BefuddledLabs.OpenSyncDance.Editor
         /// 2: end timestamp
         /// 3: output file
         /// </summary>
-        private static string ytdlpParams = $"--ffmpeg-location \"{FFmpegPath}\"" + "-f bestaudio --audio-quality 0 -x --audio-format vorbis --force-keyframes-at-cuts -i {0} --download-sections \"*{1}-{2}\" --force-overwrites --no-mtime -v -o \"{3}\"";
+        private static string ytdlpParams = $"--ffmpeg-location \"{FFmpegPath}\" " + "-f bestaudio --audio-quality 0 -x --audio-format vorbis --force-keyframes-at-cuts -i {0} --download-sections \"*{1}-{2}\" --force-overwrites --no-mtime -v -o \"{3}\"";
 
         private static void CreateBinariesFolder() 
         {
             if (!Directory.Exists(BinariesPath))
                 Directory.CreateDirectory(BinariesPath);
+        }
+
+        private static void CreateAudioFolder() {
+            List<string> assetFolderPath = new() { "Assets", "OpenSyncDance", "Audio" };
+            for (int i = 1; i < assetFolderPath.Count; i++)
+            {
+                var prefixPath = string.Join('/', assetFolderPath.Take(i));
+                if (!AssetDatabase.IsValidFolder($"{prefixPath}/{assetFolderPath[i]}"))
+                    AssetDatabase.CreateFolder(prefixPath, assetFolderPath[i]);
+            }
         }
 
         private static void FFmpegDownloadFinished(object sender, AsyncCompletedEventArgs e) 
@@ -128,6 +140,8 @@ namespace BefuddledLabs.OpenSyncDance.Editor
 
         public static void DownloadYoutubeLink(string youtubeLink, TimeSpan start, TimeSpan end, string outputFileName) 
         {
+            CreateAudioFolder();
+            
             if (!Hasytdlp) 
             {
                 EditorUtility.DisplayDialog("Error",
@@ -142,33 +156,53 @@ namespace BefuddledLabs.OpenSyncDance.Editor
                 return;
             }
             
-            if (!Directory.Exists($"{Application.dataPath}/OpenSyncDance"))
-            {
-                EditorUtility.DisplayDialog("Error",
-                    "OpenSyncDance folder in Assets doesn't exist", "ok");
-                return;
-            }
-            
             EditorUtility.DisplayProgressBar("Downloading Youtube link", "", 0);
 
-            // Start new process with yt-dlp to download music from youtube
+            var songPath = $"{Application.dataPath}/OpenSyncDance/Audio/{outputFileName}";
+
+            // Start new process with yt-dlp to download music from YouTube
             var startInfo = new ProcessStartInfo {
                 FileName = ytdlpPath,
                 Arguments = string.Format(ytdlpParams, youtubeLink, TimeSpanToYtdlpString(start), TimeSpanToYtdlpString(end),
-                    $"{Application.dataPath}/OpenSyncDance/{outputFileName}.ogg"),
-                UseShellExecute = false,
+                    songPath),
+                UseShellExecute = true,
             };
             
+            
             var ytdlpProcess = Process.Start(startInfo);
-
             if (ytdlpProcess == null) 
             {
+                EditorUtility.ClearProgressBar();
                 EditorUtility.DisplayDialog("Error", "Couldn't Start yt-dlp", "ok");
                 return;
             }
             
             ytdlpProcess.WaitForExit();
+            AssetDatabase.Refresh();
             
+            var localPath = $"Assets/OpenSyncDance/Audio/{outputFileName}.ogg";
+            var importer = AssetImporter.GetAtPath(localPath) as AudioImporter;
+            if (importer == null) {
+                EditorUtility.ClearProgressBar();
+                EditorUtility.DisplayDialog("Error",
+                    $"Failed to set audio import settings for {localPath}", "ok");
+                AssetDatabase.Refresh();
+                return;
+            }
+
+            importer.forceToMono = true;
+            importer.loadInBackground = true;
+            
+            // Default settings for the downloaded audio file
+            importer.defaultSampleSettings = new AudioImporterSampleSettings
+            {
+                loadType = AudioClipLoadType.Streaming,
+                compressionFormat = AudioCompressionFormat.Vorbis,
+                quality = 0.8f,
+                sampleRateSetting = AudioSampleRateSetting.OptimizeSampleRate,
+            };
+            
+            importer.SaveAndReimport();
             EditorUtility.ClearProgressBar();
         }
     }
