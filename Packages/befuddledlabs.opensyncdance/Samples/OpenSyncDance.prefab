@@ -217,9 +217,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   assetKey: 243173d11d2037343a2eb744e38419cb
   contactPrefix: OSDDefault_
-  animatorControllerFX: {fileID: 9100000, guid: 615aab7df06e49b489b1996d510496a6,
+  animatorControllerFX: {fileID: 9100000, guid: d1d2af1497ed69f4ba71949c41f0d707,
     type: 2}
-  animatorControllerAction: {fileID: 9100000, guid: ffe54d0434882194591cd7632ae1f519,
+  animatorControllerAction: {fileID: 9100000, guid: 5396111b7b1d6714191f8866893fd3e6,
     type: 2}
   animations:
   - icon: {fileID: 0}
@@ -301,15 +301,15 @@ MonoBehaviour:
             version: 1
             fileID: 0
             guid: 
-            id: 615aab7df06e49b489b1996d510496a6|Packages/befuddledlabs.opensyncdance/Samples/OSD_FXAnimator.controller
-            objRef: {fileID: 9100000, guid: 615aab7df06e49b489b1996d510496a6, type: 2}
+            id: d1d2af1497ed69f4ba71949c41f0d707|Packages/befuddledlabs.opensyncdance/Samples/OSD_FXAnimator.controller
+            objRef: {fileID: 9100000, guid: d1d2af1497ed69f4ba71949c41f0d707, type: 2}
           type: 5
         - controller:
             version: 1
             fileID: 0
             guid: 
-            id: ffe54d0434882194591cd7632ae1f519|Packages/befuddledlabs.opensyncdance/Samples/OSD_ActionAnimator.controller
-            objRef: {fileID: 9100000, guid: ffe54d0434882194591cd7632ae1f519, type: 2}
+            id: 5396111b7b1d6714191f8866893fd3e6|Packages/befuddledlabs.opensyncdance/Samples/OSD_ActionAnimator.controller
+            objRef: {fileID: 9100000, guid: 5396111b7b1d6714191f8866893fd3e6, type: 2}
           type: 4
         menus:
         - menu:
