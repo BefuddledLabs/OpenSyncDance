@@ -434,7 +434,7 @@ namespace BefuddledLabs.OpenSyncDance
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftFingers);
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightFingers);
             //doneState.TrackingTracks(AacAv3.Av3TrackingElement.Eyes); // Most likely don't need to animate the eyes...
-            doneState.TrackingTracks(AacAv3.Av3TrackingElement.Mouth);
+            //doneState.TrackingTracks(AacAv3.Av3TrackingElement.Mouth);
 
             danceState.PlayableEnables(VRC_PlayableLayerControl.BlendableLayer.Action);
             doneState.PlayableDisables(VRC_PlayableLayerControl.BlendableLayer.Action);
@@ -472,7 +472,7 @@ namespace BefuddledLabs.OpenSyncDance
                     currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFingers);
                     currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFingers);
                     //currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Eyes); // Most likely don't need to animate the eyes...
-                    currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Mouth);
+                    //currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Mouth);
                 }
             }
         }
