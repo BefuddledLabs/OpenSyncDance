@@ -10,7 +10,7 @@
     "description": "Tools for easier Avatar Creation",
     "vpmDependencies": {
         "com.vrchat.avatars": "^3.1.0",
-        "dev.hai-vr.animator-as-code.v1": "^~1.0.9941-alpha",
+        "dev.hai-vr.animator-as-code.v1": "^1.0.9941-alpha",
         "dev.hai-vr.animator-as-code.v1.vrchat": "^1.0.9941-alpha"
     }
 }
