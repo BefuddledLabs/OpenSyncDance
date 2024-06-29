@@ -13,33 +13,53 @@ MonoBehaviour:
   m_Name: OSD_Menu_1
   m_EditorClassIdentifier: 
   controls:
-  - name: Dance 1
+  - name: Arona
     icon: {fileID: 0}
     type: 102
     parameter:
       name: OSD_SendAnim
-    value: 1
-    style: 3
+    value: 8
+    style: 0
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Dance 2
+  - name: SAR
     icon: {fileID: 0}
     type: 102
     parameter:
       name: OSD_SendAnim
-    value: 2
-    style: 3
+    value: 9
+    style: 0
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Dance 3
+  - name: Badger Badger
     icon: {fileID: 0}
     type: 102
     parameter:
       name: OSD_SendAnim
-    value: 3
-    style: 3
+    value: 10
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  - name: Zufolo Impazzito
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_SendAnim
+    value: 11
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  - name: Distraction
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_SendAnim
+    value: 12
+    style: 0
     subMenu: {fileID: 0}
     subParameters: []
     labels: []

@@ -13,13 +13,63 @@ MonoBehaviour:
   m_Name: OSD_Menu_0
   m_EditorClassIdentifier: 
   controls:
-  - name: Pokemon
+  - name: Page 1
+    icon: {fileID: 0}
+    type: 103
+    parameter:
+      name: 
+    value: 1
+    style: 0
+    subMenu: {fileID: 11400000, guid: 9e5d6b27b4883cb42a0bac1a0a48148f, type: 2}
+    subParameters: []
+    labels: []
+  - name: Dance
     icon: {fileID: 0}
     type: 102
     parameter:
       name: OSD_SendAnim
     value: 1
-    style: 3
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  - name: Die
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_SendAnim
+    value: 2
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  - name: Point
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_SendAnim
+    value: 3
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  - name: Wave
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_SendAnim
+    value: 4
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  - name: Pokemon
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_SendAnim
+    value: 5
+    style: 0
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
@@ -28,8 +78,8 @@ MonoBehaviour:
     type: 102
     parameter:
       name: OSD_SendAnim
-    value: 2
-    style: 3
+    value: 6
+    style: 0
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
@@ -38,58 +88,8 @@ MonoBehaviour:
     type: 102
     parameter:
       name: OSD_SendAnim
-    value: 3
-    style: 3
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  - name: Arona
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: OSD_SendAnim
-    value: 4
-    style: 3
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  - name: SAR
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: OSD_SendAnim
-    value: 5
-    style: 3
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  - name: Badger Badger
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: OSD_SendAnim
-    value: 6
-    style: 3
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  - name: Zufolo Impazzito
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: OSD_SendAnim
     value: 7
-    style: 3
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  - name: Distraction
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: OSD_SendAnim
-    value: 8
-    style: 3
+    style: 0
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
