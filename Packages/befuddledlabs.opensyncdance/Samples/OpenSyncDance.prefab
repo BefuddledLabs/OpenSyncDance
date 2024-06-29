@@ -223,6 +223,26 @@ MonoBehaviour:
     type: 2}
   animations:
   - icon: {fileID: 0}
+    name: Dance
+    animation: {fileID: 7400000, guid: 0d2e5f9cc00d88a48b7bbe6e2898a4b4, type: 2}
+    audio: {fileID: 0}
+    volume: 1
+  - icon: {fileID: 0}
+    name: Die
+    animation: {fileID: 7400000, guid: 4cf06429686164a45adaedb6a6e520a5, type: 2}
+    audio: {fileID: 0}
+    volume: 1
+  - icon: {fileID: 0}
+    name: Point
+    animation: {fileID: 7400000, guid: 498e9dfd6d870064184180c5e4a3fc59, type: 2}
+    audio: {fileID: 0}
+    volume: 1
+  - icon: {fileID: 0}
+    name: Wave
+    animation: {fileID: 7400000, guid: 60873c431a64a744d87a5ad1e20bf886, type: 2}
+    audio: {fileID: 0}
+    volume: 1
+  - icon: {fileID: 0}
     name: Pokemon
     animation: {fileID: 7400000, guid: aa42e7de0ecf78042bbe0d434413d263, type: 2}
     audio: {fileID: 0}
