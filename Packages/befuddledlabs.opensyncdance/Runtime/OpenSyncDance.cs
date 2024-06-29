@@ -338,6 +338,33 @@ namespace BefuddledLabs.OpenSyncDance
 
 
             serializedObject.ApplyModifiedProperties();
+            
+            if (DownloadManager.Hasytdlp && DownloadManager.HasFFmpeg) 
+            {
+                if (GUILayout.Button("Download Missing AudioClips")) 
+                {
+                    foreach (var anim in _self.animations) 
+                    {
+                        if (anim.audioType != SyncedAnimationAudioType.Youtube)
+                            continue;
+                        if (anim.audio != null)
+                            continue;
+                        if (anim.animation == null)
+                            continue;
+                        anim.audio = DownloadManager.DownloadYoutubeLink(
+                            anim.audioUrl, 
+                            anim.startTimeStamp, 
+                            anim.endTimeStamp,
+                            anim.name,
+                            anim.animation);
+                    }
+                }
+            }
+            else 
+            {
+                if (GUILayout.Button("Click to download yt-dlp/ffmpeg to use the YouTube audio type.")) 
+                    DownloadManager.DownloadBoth();
+            }
 
             if (GUILayout.Button("Generate!"))
             {

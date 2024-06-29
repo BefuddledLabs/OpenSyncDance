@@ -1,3 +1,5 @@
+#if UNITY_EDITOR
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -53,7 +55,7 @@ namespace BefuddledLabs.OpenSyncDance
         /// 2: end timestamp
         /// 3: output file
         /// </summary>
-        private static string ytdlpParams = $"--ffmpeg-location \"{FFmpegPath}\" " + "-f bestaudio --audio-quality 0 -x --audio-format vorbis --force-keyframes-at-cuts -i {0} --download-sections \"*{1}-{2}\" --force-overwrites --no-mtime -v -o \"{3}\"";
+        private static string ytdlpParams = $"--ffmpeg-location \"{FFmpegPath}\" " + "-f bestaudio --audio-quality 0 -x --audio-format wav --force-keyframes-at-cuts -i {0} --download-sections \"*{1}-{2}\" --force-overwrites --no-mtime -v -o \"{3}\"";
 
         private static void CreateBinariesFolder() 
         {
@@ -205,7 +207,7 @@ namespace BefuddledLabs.OpenSyncDance
 
             DownloadYoutubeLink(youtubeLink, startTime, endTime, outputFileName);
 
-            return AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/OpenSyncDance/Audio/{outputFileName}.ogg");
+            return AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/OpenSyncDance/Audio/{outputFileName}.wav");
         }
         public static void DownloadYoutubeLink(string youtubeLink, TimeSpan start, TimeSpan end, string outputFileName) 
         {
@@ -228,7 +230,7 @@ namespace BefuddledLabs.OpenSyncDance
             EditorUtility.DisplayProgressBar("Downloading Youtube link", "", 0);
 
             var songPath = $"{Application.dataPath}/OpenSyncDance/Audio/{outputFileName}";
-            var localPath = $"Assets/OpenSyncDance/Audio/{outputFileName}.ogg";
+            var localPath = $"Assets/OpenSyncDance/Audio/{outputFileName}.wav";
             
             if (File.Exists(songPath))
                 File.Delete(songPath);
@@ -279,3 +281,4 @@ namespace BefuddledLabs.OpenSyncDance
         }
     }
 }
+#endif

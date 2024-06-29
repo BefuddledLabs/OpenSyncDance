@@ -63,7 +63,7 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Pokemon
+  - name: Pokedance
     icon: {fileID: 0}
     type: 102
     parameter:
