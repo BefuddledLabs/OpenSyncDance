@@ -14,6 +14,12 @@ using VRC.SDKBase;
 
 namespace BefuddledLabs.OpenSyncDance
 {
+    [Serializable]
+    public enum SyncedAnimationAudioType 
+    {
+        AudioFile,
+        Youtube,
+    }
 
     [Serializable]
     public class SyncedAnimation
@@ -21,6 +27,12 @@ namespace BefuddledLabs.OpenSyncDance
         public Texture2D icon;
         public string name;
         public AnimationClip animation;
+        
+        public SyncedAnimationAudioType audioType;
+        public string audioUrl;
+        public string startTimeStamp;
+        public string endTimeStamp;
+        
         public AudioClip audio;
         public float volume = 1f; // TODO: for some reason adding a new anim to the list doesn't set volume to 1
     }
@@ -28,6 +40,17 @@ namespace BefuddledLabs.OpenSyncDance
     [CustomPropertyDrawer(typeof(SyncedAnimation))]
     public class SyncAnimationDrawer : PropertyDrawer
     {
+        private void DownloadAudio(SerializedProperty property) 
+        {
+            property.FindPropertyRelative("audio").boxedValue = DownloadManager.DownloadYoutubeLink(
+                property.FindPropertyRelative("audioUrl").stringValue, 
+                property.FindPropertyRelative("startTimeStamp").stringValue, 
+                property.FindPropertyRelative("endTimeStamp").stringValue,
+                property.FindPropertyRelative("name").stringValue,
+                property.FindPropertyRelative("animation").boxedValue as AnimationClip);
+            
+        }
+        
         public override void OnGUI(Rect space, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(space, label, property);
@@ -38,6 +61,7 @@ namespace BefuddledLabs.OpenSyncDance
             EditorGUI.DrawRect(new Rect(space.x, space.y, space.width, 2), new Color32(0x11, 0x00, 0x02, 0xFF));
             space.y += 8;
 
+            // TODO: update this for the YouTube UI
             //        44    12            16
             //      ┌───────┬─┐           ┌┐
             //    ┌ ┌───────┬─┐┌────────┬─┐┌────────┬─┐ ┐
@@ -48,15 +72,28 @@ namespace BefuddledLabs.OpenSyncDance
             //      └─────────┘└──────────────────────┘
             //         56         (width - 56 - 16) / 2
 
+            var fullWidth = space.width;
+
             Rect iconRect = new(space.x, space.y, 56, 44);
             space.x += 60;
-            space.width = (space.width - 16 - 60) / 2;
+            space.width = (fullWidth - 16 - 60) / 2;
 
             Rect nameRect = new(space.x, space.y, space.width, 20);
             Rect animRect = new(space.x + space.width + 16, space.y, space.width, 20);
             space.y += 24;
-            Rect audioRect = new(space.x, space.y, space.width, 20);
+            Rect audioTypeRect = new(space.x, space.y, space.width / 2, 20);
+            Rect audioRect = new(space.x + space.width / 2, space.y, space.width / 2, 20);
             Rect volRect = new(space.x + space.width + 16, space.y, space.width, 20);
+            space.x -= 60;
+            space.y += 24;
+            space.width = (fullWidth - 8 - 24) / 4;
+            
+            Rect downloadToolsRect = new(space.x, space.y, fullWidth, 20);
+            Rect urlRect = new(space.x, space.y, space.width, 20);
+            Rect startTimeStampRect = new(space.x + space.width + 16, space.y, space.width, 20);
+            Rect endTimeStampRect = new(space.x + (space.width + 16) * 2, space.y, space.width - 24, 20);
+            Rect downloadAudioButtonRect = new(space.x + (space.width + 16) * 3  - 24, space.y, space.width, 20);
+            
 
             EditorGUIUtility.labelWidth = 50;
 
@@ -68,8 +105,31 @@ namespace BefuddledLabs.OpenSyncDance
             DrawPropertyFieldWithLabel(animRect, property.FindPropertyRelative("animation"), "Anim", labelStyle);
 
             labelStyle.normal.textColor = new Color32(0x97, 0x29, 0xFC, 0xFF);
+            DrawPropertyFieldWithLabel(audioTypeRect, property.FindPropertyRelative("audioType"), "Type", labelStyle);
             DrawPropertyFieldWithLabel(audioRect, property.FindPropertyRelative("audio"), "Audio", labelStyle);
             SliderFieldWithLabel(volRect, property.FindPropertyRelative("volume"), 0, 1, "Volume", labelStyle);
+            
+            // UI for downloading audio from YouTube
+            var audioType = (SyncedAnimationAudioType)property.FindPropertyRelative("audioType").boxedValue;
+            if (audioType == SyncedAnimationAudioType.Youtube) 
+            {
+                if (DownloadManager.Hasytdlp && DownloadManager.HasFFmpeg) 
+                {
+                    labelStyle.normal.textColor = new Color32(0xF6, 0xBA, 0xFB, 0xFF);
+                    DrawPropertyFieldWithLabel(urlRect, property.FindPropertyRelative("audioUrl"), "URL", labelStyle);
+                    DrawPropertyFieldWithLabel(startTimeStampRect, property.FindPropertyRelative("startTimeStamp"), "Trim", labelStyle);
+                    EditorGUIUtility.labelWidth = 24;
+                    DrawPropertyFieldWithLabel(endTimeStampRect, property.FindPropertyRelative("endTimeStamp"), "-", labelStyle);
+                    EditorGUIUtility.labelWidth = 50;
+                    if (GUI.Button(downloadAudioButtonRect, "Download"))
+                        DownloadAudio(property);
+                }
+                else 
+                {
+                    if (GUI.Button(downloadToolsRect, "Click to download yt-dlp/ffmpeg to use the YouTube audio type.")) 
+                        DownloadManager.DownloadBoth();
+                }
+            }
 
             EditorGUI.EndProperty();
 
@@ -95,7 +155,11 @@ namespace BefuddledLabs.OpenSyncDance
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             // Default height is 20
-            return 56;
+            var height = 56;
+            var audioType = (SyncedAnimationAudioType)property.FindPropertyRelative("audioType").boxedValue;
+            if (audioType == SyncedAnimationAudioType.Youtube)
+                height += 24;
+            return height;
         }
     }
 
@@ -239,7 +303,6 @@ namespace BefuddledLabs.OpenSyncDance
         {
             // Make sure it's initialized, other wise we might check null variables!
             _self.EnsureInitialized();
-
             serializedObject.Update();
 
             var contactPrefix_property = serializedObject.FindProperty("contactPrefix");

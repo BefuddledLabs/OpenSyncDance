@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace BefuddledLabs.OpenSyncDance
 {
@@ -128,15 +129,84 @@ namespace BefuddledLabs.OpenSyncDance
                 EditorUtility.DisplayProgressBar("Downloading yt-dlp", $"{(float)args.BytesReceived / args.TotalBytesToReceive * 100}% of {args.TotalBytesToReceive / 1024 / 1024}MiB", args.ProgressPercentage / 100f);
             };
 
-            ytdlpDownloader.DownloadFileCompleted += (_, _) => { AssetDatabase.Refresh(); };
-            
+            ytdlpDownloader.DownloadFileCompleted += (_, _) => { AssetDatabase.Refresh(); EditorUtility.ClearProgressBar(); };
             ytdlpDownloader.DownloadFileAsync(new Uri(YtdlpURL), BinariesPath + "/yt-dlp.exe");
-            
-            EditorUtility.ClearProgressBar();
         }
 
         private static string TimeSpanToYtdlpString(TimeSpan timeSpan) => timeSpan.ToString(@"mm\:ss\.fff");
+        
+        public static bool TryParseTimeSpan(string timeString, out TimeSpan timeSpan)
+        {
+            timeString = timeString.Trim();
+            string[] formats = { // Uhh, I'm stupid, this is awful
+                @"mm\:ss\.fff",
+                @"mm\:ss\.ff",
+                @"mm\:ss\.f",
+                @"mm\:ss",
+                @"m\:ss\.fff",
+                @"m\:ss\.ff",
+                @"m\:ss\.f",
+                @"m\:ss",
+                @"mm\:s\.fff",
+                @"mm\:s\.ff",
+                @"mm\:s\.f",
+                @"mm\:s",
+                @"m\:s\.fff",
+                @"m\:s\.ff",
+                @"m\:s\.f",
+                @"m\:s",
+                @"ss\.fff",
+                @"ss\.ff",
+                @"ss\.f",
+                @"s\.fff",
+                @"s\.ff",
+                @"s\.f",
+            };
+            foreach (var format in formats)
+                if (TimeSpan.TryParseExact(timeString, format, null, out timeSpan))
+                    return true;
+            timeSpan = default;
+            return false;
+        }
 
+        public static AudioClip DownloadYoutubeLink(string youtubeLink, string start, string end, string outputFileName, AnimationClip animationClip) 
+        {
+            if (!animationClip)
+            {
+                EditorUtility.DisplayDialog("Error",
+                    $"No animation clip was provided for {outputFileName}", "ok");
+                return null;
+            }
+            
+            if (!TryParseTimeSpan(start, out var startTime))
+            {
+                EditorUtility.DisplayDialog("Start Time Error",
+                    "Start time is formatted wrong, should be minutes:seconds.milliseconds", "ok");
+                return null;
+            }
+
+            TimeSpan endTime;
+            if (end.Equals("auto", StringComparison.InvariantCultureIgnoreCase) || string.IsNullOrWhiteSpace(end)) 
+            {
+                endTime = startTime + TimeSpan.FromMilliseconds(animationClip.length * 1000d);
+            }
+            else if (!TryParseTimeSpan(end, out endTime))
+            {
+                EditorUtility.DisplayDialog("End Time Error",
+                    "End time is formatted wrong, should be minutes:seconds.milliseconds or \"auto\"", "ok");
+                return null;
+            }
+                        
+            if (startTime > endTime)
+            {
+                EditorUtility.DisplayDialog("Time Error", "End time is formatted wrong, should be minutes:seconds.milliseconds or \"auto\"", "ok");
+                return null;
+            }
+
+            DownloadYoutubeLink(youtubeLink, startTime, endTime, outputFileName);
+
+            return AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/OpenSyncDance/Audio/{outputFileName}.ogg");
+        }
         public static void DownloadYoutubeLink(string youtubeLink, TimeSpan start, TimeSpan end, string outputFileName) 
         {
             CreateAudioFolder();
@@ -158,6 +228,10 @@ namespace BefuddledLabs.OpenSyncDance
             EditorUtility.DisplayProgressBar("Downloading Youtube link", "", 0);
 
             var songPath = $"{Application.dataPath}/OpenSyncDance/Audio/{outputFileName}";
+            var localPath = $"Assets/OpenSyncDance/Audio/{outputFileName}.ogg";
+            
+            if (File.Exists(songPath))
+                File.Delete(songPath);
 
             // Start new process with yt-dlp to download music from YouTube
             var startInfo = new ProcessStartInfo {
@@ -179,7 +253,6 @@ namespace BefuddledLabs.OpenSyncDance
             ytdlpProcess.WaitForExit();
             AssetDatabase.Refresh();
             
-            var localPath = $"Assets/OpenSyncDance/Audio/{outputFileName}.ogg";
             var importer = AssetImporter.GetAtPath(localPath) as AudioImporter;
             if (importer == null) {
                 EditorUtility.ClearProgressBar();
