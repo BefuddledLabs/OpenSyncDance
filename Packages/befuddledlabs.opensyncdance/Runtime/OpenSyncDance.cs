@@ -59,14 +59,14 @@ namespace BefuddledLabs.OpenSyncDance
             Rect volRect = new(space.x + space.width + 16, space.y, space.width, 20);
 
             EditorGUIUtility.labelWidth = 50;
-            
+
             EditorGUI.PropertyField(iconRect, property.FindPropertyRelative("icon"), GUIContent.none);
-            
+
             GUIStyle labelStyle = new GUIStyle(EditorStyles.label);
             labelStyle.normal.textColor = new Color32(0xE2, 0x6C, 0xD7, 0xFF);
             DrawPropertyFieldWithLabel(nameRect, property.FindPropertyRelative("name"), "Name", labelStyle);
             DrawPropertyFieldWithLabel(animRect, property.FindPropertyRelative("animation"), "Anim", labelStyle);
-            
+
             labelStyle.normal.textColor = new Color32(0x97, 0x29, 0xFC, 0xFF);
             DrawPropertyFieldWithLabel(audioRect, property.FindPropertyRelative("audio"), "Audio", labelStyle);
             SliderFieldWithLabel(volRect, property.FindPropertyRelative("volume"), 0, 1, "Volume", labelStyle);
@@ -75,7 +75,7 @@ namespace BefuddledLabs.OpenSyncDance
 
             EditorGUI.indentLevel = oldIndent;
         }
-        
+
         private void DrawPropertyFieldWithLabel(Rect rect, SerializedProperty property, string label, GUIStyle labelStyle)
         {
             EditorGUI.LabelField(rect, label, labelStyle);
@@ -83,7 +83,7 @@ namespace BefuddledLabs.OpenSyncDance
             rect.width -= EditorGUIUtility.labelWidth;
             EditorGUI.PropertyField(rect, property, GUIContent.none);
         }
-        
+
         private void SliderFieldWithLabel(Rect rect, SerializedProperty property, float leftValue, float rightValue, string label, GUIStyle labelStyle)
         {
             EditorGUI.LabelField(rect, label, labelStyle);
@@ -105,7 +105,7 @@ namespace BefuddledLabs.OpenSyncDance
         /// UUID used for tracking purposes. Mainly used by Animator as Code.
         /// </summary>
         public string assetKey;
-        
+
         /// <summary>
         /// Prefix string used for the contacts.
         /// </summary>
@@ -255,7 +255,7 @@ namespace BefuddledLabs.OpenSyncDance
             EditorGUILayout.PropertyField(animation_property, true);
 
             // Advanced settings for smarty pants. You probably don't need this.
-            if(_uiAdvancedFoldoutState = EditorGUILayout.BeginFoldoutHeaderGroup(_uiAdvancedFoldoutState, "Advanced"))
+            if (_uiAdvancedFoldoutState = EditorGUILayout.BeginFoldoutHeaderGroup(_uiAdvancedFoldoutState, "Advanced"))
             {
                 var guidPoperty = serializedObject.FindProperty("assetKey");
                 EditorGUILayout.PropertyField(guidPoperty, true);
@@ -317,7 +317,8 @@ namespace BefuddledLabs.OpenSyncDance
             // Create the parameters for receiving the animation index;
             var receiveParamNames = new List<string>();
             var paramSendAnimIdBitsNames = new List<string>();
-            for (int i = 0; i < _numberOfBits; i++){
+            for (int i = 0; i < _numberOfBits; i++)
+            {
                 receiveParamNames.Add(string.Format(_recvBitParamName, i));
                 paramSendAnimIdBitsNames.Add($"paramSendAnimIdBits_{i}");
             }
@@ -328,9 +329,9 @@ namespace BefuddledLabs.OpenSyncDance
             _paramSendAnimId = _sendLayer.IntParameter(_sendAnimIdName);
         }
 
-        private void GenerateSyncedBitLayer() 
+        private void GenerateSyncedBitLayer()
         {
-            var _paramSendAnimIdBitsList = _paramSendAnimIdBits.ToList(); 
+            var _paramSendAnimIdBitsList = _paramSendAnimIdBits.ToList();
 
             var entry = _bitLayer.NewState("Entry");
 
@@ -342,7 +343,8 @@ namespace BefuddledLabs.OpenSyncDance
 
             var localAnimationStates = new List<AacFlState>();
             Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(localEncode), new AacFlIntDecisionParameter(_paramSendAnimId, _numberOfBits), ref localAnimationStates);
-            for (int i = 0; i < localAnimationStates.Count; i++) {
+            for (int i = 0; i < localAnimationStates.Count; i++)
+            {
                 localAnimationStates[i].State.name = $"Send {i}";
                 localAnimationStates[i].Exits().Automatically();
                 for (int j = 0; j < _paramSendAnimIdBitsList.Count(); j++)
@@ -357,7 +359,8 @@ namespace BefuddledLabs.OpenSyncDance
 
             var remoteAnimationStates = new List<AacFlState>();
             Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(remoteDecode), new AacFlBoolGroupDecisionParameter(_paramSendAnimIdBits, _numberOfBits), ref remoteAnimationStates);
-            for (int i = 0; i < remoteAnimationStates.Count; i++){
+            for (int i = 0; i < remoteAnimationStates.Count; i++)
+            {
                 remoteAnimationStates[i].State.name = $"Receive {i}";
                 remoteAnimationStates[i].Drives(_paramSendAnimId, i);
                 remoteAnimationStates[i].Exits().Automatically();
@@ -415,7 +418,7 @@ namespace BefuddledLabs.OpenSyncDance
             }
         }
 
-        private void GenerateReceiveLayer() 
+        private void GenerateReceiveLayer()
         {
             var readyState = _recvLayer.NewState("Ready");
             var danceState = _recvLayer.NewSubStateMachine("Dance");
@@ -459,7 +462,7 @@ namespace BefuddledLabs.OpenSyncDance
                     currentState.WithAnimation(currentSyncedAnimation.animation);
 
                     // Ugly thing to turn IK sync back on
-                    
+
                     currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Head);
                     currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftHand);
                     currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightHand);
@@ -526,7 +529,7 @@ namespace BefuddledLabs.OpenSyncDance
         /// Creates or gets an asset from a path
         /// </summary>
         private T CreateOrLoadAsset<T>(string path)
-            where T : ScriptableObject 
+            where T : ScriptableObject
         {
             var asset = AssetDatabase.LoadAssetAtPath<T>(path);
             if (asset != null)
@@ -574,7 +577,8 @@ namespace BefuddledLabs.OpenSyncDance
 
             for (int i = 0; i < _numberOfBits; i++)
             {
-                tempParams.Add(new() {
+                tempParams.Add(new()
+                {
                     name = $"paramSendAnimIdBits_{i}",
                     valueType = VRCExpressionParameters.ValueType.Bool,
                     saved = false,
@@ -590,7 +594,21 @@ namespace BefuddledLabs.OpenSyncDance
             {
                 if (_vrcMenus.Count <= pageId)
                     _vrcMenus.Add(null);
-                _vrcMenus[pageId] = CreateOrLoadAsset<VRCExpressionsMenu>($"{assetFolder}/OSD_Menu_{pageId}.asset");
+                if (!_vrcMenus[pageId])
+                    _vrcMenus[pageId] = CreateOrLoadAsset<VRCExpressionsMenu>($"{assetFolder}/OSD_Menu_{pageId}.asset");
+                
+                // Clear menu!
+                _vrcMenus[pageId].controls = new();
+            }
+
+            for (int pageId = 0; pageId < numPages - 1; pageId++)
+            {
+                _vrcMenus[pageId].controls.Append(new VRCExpressionsMenu.Control {
+                    icon = null,
+                    name = $"Page {pageId + 1}",
+                    type = VRCExpressionsMenu.Control.ControlType.SubMenu,
+                    subMenu = _vrcMenus[pageId + 1],
+                });
             }
 
             // Setup menus
@@ -601,24 +619,23 @@ namespace BefuddledLabs.OpenSyncDance
 
                 // Skip animations that we already put in pages, then take enough to fill the page.
                 // Map the taken items to a VRC menu button.
-                _vrcMenus[pageId].controls = _animations.Skip(animsPerPage * pageId).Take(animsOnThisPage).Select((SyncedAnimation anim) =>
+                _vrcMenus[pageId].controls.AddRange(_animations.Skip(animsPerPage * pageId).Take(animsOnThisPage).Select((SyncedAnimation anim) =>
                 {
                     animationId++;
                     return new VRCExpressionsMenu.Control
                     {
                         icon = anim.icon,
-                        labels = new VRCExpressionsMenu.Control.Label[] { },
                         name = anim.name,
                         parameter = new VRCExpressionsMenu.Control.Parameter()
                         {
                             name = _paramSendAnimId.Name,
                         },
-                        style = VRCExpressionsMenu.Control.Style.Style4,
                         type = VRCExpressionsMenu.Control.ControlType.Toggle,
                         value = animationId,
                     };
-                }).ToList();
+                }));
             }
+
             AssetDatabase.SaveAssets();
         }
     }
