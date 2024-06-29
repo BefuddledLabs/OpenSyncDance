@@ -40,3 +40,7 @@ To make modifications to this package:
   - For creating [CuteDancer](https://github.com/Krysiek/CuteDancer) and animation files.
 - *Spooki Boy* 💃
   - For creating [CuteDancer](https://github.com/Krysiek/CuteDancer) and animation files.
+- [*yt-dlp*](https://github.com/yt-dlp/yt-dlp) 🛠️
+  - For downloading and extracting audio files from YouTube videos.
+- [*FFmpeg*](https://ffmpeg.org/) 🎞️
+  - For handling audio extraction and conversion.

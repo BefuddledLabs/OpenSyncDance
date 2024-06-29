@@ -549,7 +549,7 @@ namespace BefuddledLabs.OpenSyncDance
             int numPages = (_animations.Count + animsPerPage - 2) / animsPerPage;
 
             // Create a path of folders
-            List<string> assetFolderPath = new() { "Assets", "OpenSyncDanceGenerated", _self.assetKey };
+            List<string> assetFolderPath = new() { "Assets", "OpenSyncDance", _self.assetKey };
             for (int i = 1; i < assetFolderPath.Count; i++)
             {
                 // We don't have to create the assets folder, so  we start at i = 1. Then for every
