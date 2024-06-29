@@ -603,7 +603,7 @@ namespace BefuddledLabs.OpenSyncDance
 
             for (int pageId = 0; pageId < numPages - 1; pageId++)
             {
-                _vrcMenus[pageId].controls.Append(new VRCExpressionsMenu.Control {
+                _vrcMenus[pageId].controls.Add(new VRCExpressionsMenu.Control {
                     icon = null,
                     name = $"Page {pageId + 1}",
                     type = VRCExpressionsMenu.Control.ControlType.SubMenu,
