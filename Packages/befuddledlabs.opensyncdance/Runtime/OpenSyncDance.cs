@@ -511,6 +511,7 @@ namespace BefuddledLabs.OpenSyncDance
         private void GenerateReceiveLayer()
         {
             var readyState = _recvLayer.NewState("Ready");
+            var bufferState = _recvLayer.NewState("Buffer");
             var danceState = _recvLayer.NewSubStateMachine("Dance");
             var doneState = _recvLayer.NewState("Done");
 
@@ -533,7 +534,9 @@ namespace BefuddledLabs.OpenSyncDance
 
             // Transition to dance blend tree whenever an animation is triggered
             readyState.TransitionsFromEntry();
-            readyState.TransitionsTo(danceState).When(_paramRecvBits.IsAnyTrue());
+            readyState.TransitionsTo(bufferState).When(_paramRecvBits.IsAnyTrue());
+            bufferState.TransitionsTo(danceState).When(_paramRecvBits.IsAnyTrue());
+            bufferState.TransitionsTo(readyState).Automatically();
             danceState.TransitionsTo(doneState);
 
             var animationStates = new List<AacFlState>();
