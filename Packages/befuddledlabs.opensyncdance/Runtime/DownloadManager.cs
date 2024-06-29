@@ -8,9 +8,8 @@ using System.Linq;
 using System.Net;
 using UnityEditor;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
-namespace BefuddledLabs.OpenSyncDance.Editor 
+namespace BefuddledLabs.OpenSyncDance
 {
     public static class DownloadManager {
         
