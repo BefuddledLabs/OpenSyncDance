@@ -55,7 +55,11 @@ namespace BefuddledLabs.OpenSyncDance
         /// 2: end timestamp
         /// 3: output file
         /// </summary>
-        private static string ytdlpParams = $"--ffmpeg-location \"{FFmpegPath}\" " + "-f bestaudio --audio-quality 0 -x --audio-format wav --force-keyframes-at-cuts -i {0} --download-sections \"*{1}-{2}\" --force-overwrites --no-mtime -v -o \"{3}\"";
+        private static string ytdlpParams = $"--ffmpeg-location \"{FFmpegPath}\" " // Use this ffmpeg
+            + "-f bestaudio --audio-quality 0 -x --audio-format wav " // Convert to audio file
+            + "--force-keyframes-at-cuts -i {0} --download-sections \"*{1}-{2}\" " // Download specific section of song
+            + "--force-overwrites --no-mtime -v -o \"{3}\" " // Overwrite file and use curret date time
+            + "--retry-sleep 5 --retries 3"; // Retry because youtube can be youtube
 
         private static void CreateBinariesFolder() 
         {
@@ -240,7 +244,8 @@ namespace BefuddledLabs.OpenSyncDance
                 FileName = ytdlpPath,
                 Arguments = string.Format(ytdlpParams, youtubeLink, TimeSpanToYtdlpString(start), TimeSpanToYtdlpString(end),
                     songPath),
-                UseShellExecute = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
             };
             
             
@@ -270,7 +275,8 @@ namespace BefuddledLabs.OpenSyncDance
             // Default settings for the downloaded audio file
             importer.defaultSampleSettings = new AudioImporterSampleSettings
             {
-                loadType = AudioClipLoadType.Streaming,
+                // Streaming uses more CPU which is big no no in VRChat.
+                loadType = AudioClipLoadType.CompressedInMemory,
                 compressionFormat = AudioCompressionFormat.Vorbis,
                 quality = 0.8f,
                 sampleRateSetting = AudioSampleRateSetting.OptimizeSampleRate,

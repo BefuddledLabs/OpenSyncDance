@@ -479,10 +479,10 @@ namespace BefuddledLabs.OpenSyncDance
                         {
                             a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
                                 new[] { currentSyncedAnimation.audio });
-                            a.SetsVolume(currentSyncedAnimation.volume);
                             a.PlayAudio.PlayOnEnter = true;
                             a.PlayAudio.StopOnExit = true;
                             a.SetsLooping();
+                            a.SetsVolume(0);
                         });
                 }
 
@@ -499,6 +499,13 @@ namespace BefuddledLabs.OpenSyncDance
                         musicConditions = musicConditions.And(recvParamNames[j].IsEqualTo(wantedParamState));
                         a.Animates(_contactSenders[j].gameObject).WithOneFrame(wantedParamState ? 1 : 0);
                     }
+
+                    // Fade in audio to get rid of popping noise
+                    var volume = a.Animates(_audioSource, "m_Volume");
+                    volume.WithUnit(AacFlUnit.Seconds, (AacFlSettingKeyframes key) => {
+                        key.Linear(0.0f, 0.0f);
+                        key.Linear(0.2f, currentSyncedAnimation.volume);
+                    });
                 });
 
                 danceState.WithAnimation(toggleClip);
