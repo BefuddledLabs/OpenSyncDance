@@ -58,3 +58,9 @@ To make modifications to this package:
   - For downloading and extracting audio files from YouTube videos.
 - [*FFmpeg*](https://ffmpeg.org/) 🎞️
   - For handling audio extraction and conversion.
+
+## Examples
+
+> _The Open Sync Dance component (0.0.7)_
+>
+> ![UI Preview of OSD v0.0.7](/Docs/osd_ui_preview.png)
