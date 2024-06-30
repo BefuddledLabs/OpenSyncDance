@@ -6,7 +6,7 @@
 ## Dependencies
 
 - [Haï's Animator As Code](https://github.com/hai-vr/av3-animator-as-code)
-- [Haï's Animator As Code - VRChat](https://github.com/hai-vr/animator-as-code-vrchat), version 1.0.9941 or higher
+- [Haï's Animator As Code - VRChat](https://github.com/hai-vr/animator-as-code-vrchat), version `1.1.0-beta` or higher
 
 ## Included Dances
 

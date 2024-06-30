@@ -269,7 +269,6 @@ namespace BefuddledLabs.OpenSyncDance
                 return;
             }
 
-            importer.forceToMono = true;
             importer.loadInBackground = true;
             
             // Default settings for the downloaded audio file

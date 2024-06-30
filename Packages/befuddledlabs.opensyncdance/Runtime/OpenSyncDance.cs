@@ -292,6 +292,8 @@ namespace BefuddledLabs.OpenSyncDance
 
         bool _uiAdvancedFoldoutState = false;
 
+        private const float _animDelay = 0.1f;
+
         private void OnEnable()
         {
             _self = (OpenSyncDance)target;
@@ -463,7 +465,7 @@ namespace BefuddledLabs.OpenSyncDance
             var exitState = _sendLayer.NewState("Done");
 
             readyState.TransitionsFromEntry();
-            exitState.Exits().Automatically().WithTransitionDurationSeconds(0.5f);
+            exitState.Exits().Automatically().WithTransitionDurationSeconds(0.2f);
 
             for (int i = 1; i < _animations.Count + 1; i++)
             {
@@ -477,6 +479,7 @@ namespace BefuddledLabs.OpenSyncDance
                     musicState.Audio(_audioSource,
                         (a) =>
                         {
+                            a.StartsPlayingOnEnterAfterSeconds(_animDelay);
                             a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
                                 new[] { currentSyncedAnimation.audio });
                             a.PlayAudio.PlayOnEnter = true;
@@ -542,8 +545,8 @@ namespace BefuddledLabs.OpenSyncDance
             // Transition to dance blend tree whenever an animation is triggered
             readyState.TransitionsFromEntry();
             readyState.TransitionsTo(bufferState).When(_paramRecvBits.IsAnyTrue());
-            bufferState.TransitionsTo(danceState).When(_paramRecvBits.IsAnyTrue());
-            bufferState.TransitionsTo(readyState).Automatically();
+            bufferState.TransitionsTo(danceState).When(_paramRecvBits.IsAnyTrue()); 
+            bufferState.TransitionsTo(readyState).Automatically().WithTransitionDurationSeconds(_animDelay);
             danceState.TransitionsTo(doneState);
 
             var animationStates = new List<AacFlState>();
