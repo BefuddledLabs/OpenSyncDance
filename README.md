@@ -32,6 +32,8 @@ Open Sync Dance is a utility and Unity prefab to have player-synchronized dances
 - Zufolo Impazzito by [*Krysiek*](https://github.com/Krysiek)
 - Distraction by *Spooki Boy*
 
+Want to add to this list? [Check the contributing guide for animations!](/Docs/contributing_animations.md)
+
 ## Development
 
 To make modifications to this package:
