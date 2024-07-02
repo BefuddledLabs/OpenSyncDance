@@ -485,7 +485,8 @@ namespace BefuddledLabs.OpenSyncDance
             {
                 state.State.name = $"Send {param.id}";
                 state.Exits().Automatically();
-                _paramSendAnimIdBitsList.Zip(param.GetBits(), (p, b) => state.Drives(p, b));
+
+                _paramSendAnimIdBitsList.Zip(param.GetBits(), (p, b) => state.Drives(p, b)).ToList();
             }
 
             // Remote player decodes sync bits
