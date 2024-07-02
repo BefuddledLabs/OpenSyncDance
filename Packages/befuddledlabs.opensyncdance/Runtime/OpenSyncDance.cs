@@ -47,7 +47,7 @@ namespace BefuddledLabs.OpenSyncDance
     {
         private void DownloadAudio(SerializedProperty property) {
             var entry = (AnimationClip)property.FindPropertyRelative("entryAnimation")?.boxedValue;
-            var loop = (AnimationClip)property.FindPropertyRelative("entryAnimationloopAnimation")?.boxedValue;
+            var loop = (AnimationClip)property.FindPropertyRelative("loopAnimation")?.boxedValue;
             var exit = (AnimationClip)property.FindPropertyRelative("exitAnimation")?.boxedValue;
 
             var len = 0f;
