@@ -26,28 +26,44 @@ namespace BefuddledLabs.OpenSyncDance
     {
         public Texture2D icon;
         public string name;
-        public AnimationClip animation;
+
+        public AnimationClip entryAnimation;
+        public AnimationClip loopAnimation;
+        public AnimationClip exitAnimation;
         
         public SyncedAnimationAudioType audioType;
         public string audioUrl;
         public string startTimeStamp;
         public string endTimeStamp;
         
-        public AudioClip audio;
+        public AudioClip entryAudio;
+        public AudioClip loopAudio;
+        public AudioClip exitAudio;
         public float volume = 1f; // TODO: for some reason adding a new anim to the list doesn't set volume to 1
     }
 
     [CustomPropertyDrawer(typeof(SyncedAnimation))]
     public class SyncAnimationDrawer : PropertyDrawer
     {
-        private void DownloadAudio(SerializedProperty property) 
-        {
+        private void DownloadAudio(SerializedProperty property) {
+            var entry = (AnimationClip)property.FindPropertyRelative("entryAnimation").boxedValue;
+            var loop = (AnimationClip)property.FindPropertyRelative("entryAnimationloopAnimation").boxedValue;
+            var exit = (AnimationClip)property.FindPropertyRelative("exitAnimation").boxedValue;
+
+            var len = 0f;
+            if (entry != null)
+                len = entry.length;
+            if (loop != null)
+                len += loop.length;
+            if (exit != null)
+                len += exit.length;
+            
             property.FindPropertyRelative("audio").boxedValue = DownloadManager.DownloadYoutubeLink(
                 property.FindPropertyRelative("audioUrl").stringValue, 
                 property.FindPropertyRelative("startTimeStamp").stringValue, 
                 property.FindPropertyRelative("endTimeStamp").stringValue,
                 property.FindPropertyRelative("name").stringValue,
-                property.FindPropertyRelative("animation").boxedValue as AnimationClip);
+                TimeSpan.FromSeconds(len));
             
         }
         
@@ -79,13 +95,27 @@ namespace BefuddledLabs.OpenSyncDance
             space.width = (fullWidth - 16 - 60) / 2;
 
             Rect nameRect = new(space.x, space.y, space.width, 20);
-            Rect animRect = new(space.x + space.width + 16, space.y, space.width, 20);
             space.y += 24;
-            Rect audioTypeRect = new(space.x, space.y, space.width / 2, 20);
-            Rect audioRect = new(space.x + space.width / 2, space.y, space.width / 2, 20);
+            
+            space.width = (fullWidth - 16 - 60) / 2;
+            Rect audioTypeRect = new(space.x, space.y, space.width, 20);
             Rect volRect = new(space.x + space.width + 16, space.y, space.width, 20);
-            space.x -= 60;
             space.y += 24;
+            
+            space.width = (fullWidth - 32 - 60) / 3;
+            Rect animLabel = new(space.x - 60, space.y, 56, 20);
+            Rect entryAnimRect = new(space.x, space.y, space.width, 20);
+            Rect loopAnimRect = new(space.x + space.width + 16, space.y, space.width, 20);
+            Rect exitAnimRect = new(space.x + space.width * 2 + 32, space.y, space.width, 20);
+            space.y += 24;
+            
+            Rect audioLabel = new(space.x - 60, space.y, 56, 20);
+            Rect entryAudioRect = new(space.x, space.y, space.width, 20);
+            Rect loopAudioRect = new(space.x + space.width + 16, space.y, space.width, 20);
+            Rect exitAudioRect = new(space.x + space.width * 2 + 32, space.y, space.width, 20);
+            space.y += 24;
+            
+            space.x -= 60;
             space.width = (fullWidth - 8 - 24) / 4;
             
             Rect downloadToolsRect = new(space.x, space.y, fullWidth, 20);
@@ -102,11 +132,20 @@ namespace BefuddledLabs.OpenSyncDance
             GUIStyle labelStyle = new GUIStyle(EditorStyles.label);
             labelStyle.normal.textColor = new Color32(0xE2, 0x6C, 0xD7, 0xFF);
             DrawPropertyFieldWithLabel(nameRect, property.FindPropertyRelative("name"), "Name", labelStyle);
-            DrawPropertyFieldWithLabel(animRect, property.FindPropertyRelative("animation"), "Anim", labelStyle);
+            
+            EditorGUI.LabelField(animLabel, "Anim", labelStyle);
+            DrawPropertyFieldWithLabel(entryAnimRect, property.FindPropertyRelative("entryAnimation"), "Entry", labelStyle);
+            DrawPropertyFieldWithLabel(loopAnimRect, property.FindPropertyRelative("loopAnimation"), "Loop", labelStyle);
+            DrawPropertyFieldWithLabel(exitAnimRect, property.FindPropertyRelative("exitAnimation"), "Exit", labelStyle);
 
             labelStyle.normal.textColor = new Color32(0x97, 0x29, 0xFC, 0xFF);
+            EditorGUI.LabelField(audioLabel, "Audio", labelStyle);
+            DrawPropertyFieldWithLabel(entryAudioRect, property.FindPropertyRelative("entryAudio"), "Entry", labelStyle);
+            DrawPropertyFieldWithLabel(loopAudioRect, property.FindPropertyRelative("loopAudio"), "Loop", labelStyle);
+            DrawPropertyFieldWithLabel(exitAudioRect, property.FindPropertyRelative("exitAudio"), "Exit", labelStyle);
+            
             DrawPropertyFieldWithLabel(audioTypeRect, property.FindPropertyRelative("audioType"), "Type", labelStyle);
-            DrawPropertyFieldWithLabel(audioRect, property.FindPropertyRelative("audio"), "Audio", labelStyle);
+            
             SliderFieldWithLabel(volRect, property.FindPropertyRelative("volume"), 0, 1, "Volume", labelStyle);
             
             // UI for downloading audio from YouTube
@@ -154,12 +193,12 @@ namespace BefuddledLabs.OpenSyncDance
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            // Default height is 20
-            var height = 56;
+            var rows = 4;
+            
             var audioType = (SyncedAnimationAudioType)property.FindPropertyRelative("audioType").boxedValue;
             if (audioType == SyncedAnimationAudioType.Youtube)
-                height += 24;
-            return height;
+                rows += 1;
+            return 20 * rows + 4 * (rows-1) + 12;
         }
     }
 
@@ -349,16 +388,25 @@ namespace BefuddledLabs.OpenSyncDance
                     {
                         if (anim.audioType != SyncedAnimationAudioType.Youtube)
                             continue;
-                        if (anim.audio != null)
+                        if (anim.loopAudio != null)
                             continue;
-                        if (anim.animation == null)
+                        if (anim.loopAnimation == null)
                             continue;
-                        anim.audio = DownloadManager.DownloadYoutubeLink(
+
+                        var len = 0f;
+                        if (anim.entryAnimation != null)
+                            len = anim.entryAnimation.length;
+                        if (anim.loopAnimation != null)
+                            len += anim.loopAnimation.length;
+                        if (anim.exitAnimation != null)
+                            len += anim.exitAnimation.length;
+                        
+                        anim.loopAudio = DownloadManager.DownloadYoutubeLink(
                             anim.audioUrl, 
                             anim.startTimeStamp, 
                             anim.endTimeStamp,
                             anim.name,
-                            anim.animation);
+                            TimeSpan.FromSeconds(len));
                     }
                 }
             }
@@ -470,18 +518,18 @@ namespace BefuddledLabs.OpenSyncDance
             for (int i = 1; i < _animations.Count + 1; i++)
             {
                 var currentSyncedAnimation = _animations[i - 1];
-                var danceState = _sendLayer.NewState($"Dance {(currentSyncedAnimation.animation == null ? i : currentSyncedAnimation.animation.name)}");
-                var musicState = _sendLayer.NewState($"Music {(currentSyncedAnimation.audio == null ? i : currentSyncedAnimation.audio.name)}");
+                var danceState = _sendLayer.NewState($"Dance {currentSyncedAnimation.name}");
+                var musicState = _sendLayer.NewState($"Music {currentSyncedAnimation.name}");
 
                 // Set the audio clip on the audio source
-                if (currentSyncedAnimation.audio != null)
+                if (currentSyncedAnimation.loopAudio != null)
                 {
                     musicState.Audio(_audioSource,
                         (a) =>
                         {
                             a.StartsPlayingOnEnterAfterSeconds(_animDelay);
                             a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
-                                new[] { currentSyncedAnimation.audio });
+                                new[] { currentSyncedAnimation.loopAudio });
                             a.PlayAudio.PlayOnEnter = true;
                             a.PlayAudio.StopOnExit = true;
                             a.SetsLooping();
@@ -525,7 +573,18 @@ namespace BefuddledLabs.OpenSyncDance
             var danceState = _recvLayer.NewSubStateMachine("Dance");
             var doneState = _recvLayer.NewState("Done");
 
+            
             // Ugly thing to not IK sync the animation
+            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.Head);
+            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftHand);
+            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.RightHand);
+            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.Hip);
+            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFoot);
+            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFoot);
+            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFingers);
+            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFingers);
+            
+            // Ugly thing to turn IK sync back on
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.Head);
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftHand);
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightHand);
@@ -534,8 +593,6 @@ namespace BefuddledLabs.OpenSyncDance
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightFoot);
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftFingers);
             doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightFingers);
-            //doneState.TrackingTracks(AacAv3.Av3TrackingElement.Eyes); // Most likely don't need to animate the eyes...
-            //doneState.TrackingTracks(AacAv3.Av3TrackingElement.Mouth);
 
             danceState.PlayableEnables(VRC_PlayableLayerControl.BlendableLayer.Action);
             doneState.PlayableDisables(VRC_PlayableLayerControl.BlendableLayer.Action);
@@ -560,23 +617,8 @@ namespace BefuddledLabs.OpenSyncDance
             {
                 var currentState = animationStates[i];
                 var currentSyncedAnimation = _animations[i - 1];
-                if (currentSyncedAnimation.animation != null)
-                {
-                    currentState.WithAnimation(currentSyncedAnimation.animation);
-
-                    // Ugly thing to turn IK sync back on
-
-                    currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Head);
-                    currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftHand);
-                    currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightHand);
-                    currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Hip);
-                    currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFoot);
-                    currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFoot);
-                    currentState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFingers);
-                    currentState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFingers);
-                    //currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Eyes); // Most likely don't need to animate the eyes...
-                    //currentState.TrackingAnimates(AacAv3.Av3TrackingElement.Mouth);
-                }
+                if (currentSyncedAnimation.loopAnimation != null)
+                    currentState.WithAnimation(currentSyncedAnimation.loopAnimation);
             }
         }
 
@@ -585,8 +627,10 @@ namespace BefuddledLabs.OpenSyncDance
             // Destroy children >:)
             // TODO: add method to keep certain objects for e.g. props that may be used
             var contactContainer = _self.transform.Find("OSD_Contacts")?.gameObject;
-            if (contactContainer != null)
+            while (contactContainer != null) {
                 DestroyImmediate(contactContainer);
+                contactContainer = _self.transform.Find("OSD_Contacts")?.gameObject;
+            }
 
             // Create contacts root object to hold
             contactContainer = new GameObject("OSD_Contacts");

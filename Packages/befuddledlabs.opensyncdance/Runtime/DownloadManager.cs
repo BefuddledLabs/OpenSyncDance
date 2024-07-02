@@ -175,15 +175,8 @@ namespace BefuddledLabs.OpenSyncDance
             return false;
         }
 
-        public static AudioClip DownloadYoutubeLink(string youtubeLink, string start, string end, string outputFileName, AnimationClip animationClip) 
+        public static AudioClip DownloadYoutubeLink(string youtubeLink, string start, string end, string outputFileName, TimeSpan animLength) 
         {
-            if (!animationClip)
-            {
-                EditorUtility.DisplayDialog("Error",
-                    $"No animation clip was provided for {outputFileName}", "ok");
-                return null;
-            }
-            
             if (!TryParseTimeSpan(start, out var startTime))
             {
                 EditorUtility.DisplayDialog("Start Time Error",
@@ -194,7 +187,7 @@ namespace BefuddledLabs.OpenSyncDance
             TimeSpan endTime;
             if (end.Equals("auto", StringComparison.InvariantCultureIgnoreCase) || string.IsNullOrWhiteSpace(end)) 
             {
-                endTime = startTime + TimeSpan.FromMilliseconds(animationClip.length * 1000d);
+                endTime = startTime + animLength;
             }
             else if (!TryParseTimeSpan(end, out endTime))
             {
