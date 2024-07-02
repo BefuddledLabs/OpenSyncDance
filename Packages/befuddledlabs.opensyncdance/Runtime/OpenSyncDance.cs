@@ -46,9 +46,9 @@ namespace BefuddledLabs.OpenSyncDance
     public class SyncAnimationDrawer : PropertyDrawer
     {
         private void DownloadAudio(SerializedProperty property) {
-            var entry = (AnimationClip)property.FindPropertyRelative("entryAnimation").boxedValue;
-            var loop = (AnimationClip)property.FindPropertyRelative("entryAnimationloopAnimation").boxedValue;
-            var exit = (AnimationClip)property.FindPropertyRelative("exitAnimation").boxedValue;
+            var entry = (AnimationClip)property.FindPropertyRelative("entryAnimation")?.boxedValue;
+            var loop = (AnimationClip)property.FindPropertyRelative("entryAnimationloopAnimation")?.boxedValue;
+            var exit = (AnimationClip)property.FindPropertyRelative("exitAnimation")?.boxedValue;
 
             var len = 0f;
             if (entry != null)
@@ -58,13 +58,12 @@ namespace BefuddledLabs.OpenSyncDance
             if (exit != null)
                 len += exit.length;
             
-            property.FindPropertyRelative("audio").boxedValue = DownloadManager.DownloadYoutubeLink(
+            property.FindPropertyRelative("loopAudio").boxedValue = DownloadManager.DownloadYoutubeLink(
                 property.FindPropertyRelative("audioUrl").stringValue, 
                 property.FindPropertyRelative("startTimeStamp").stringValue, 
                 property.FindPropertyRelative("endTimeStamp").stringValue,
                 property.FindPropertyRelative("name").stringValue,
                 TimeSpan.FromSeconds(len));
-            
         }
         
         public override void OnGUI(Rect space, SerializedProperty property, GUIContent label)
@@ -475,35 +474,32 @@ namespace BefuddledLabs.OpenSyncDance
 
             var entry = _bitLayer.NewState("Entry");
 
-
             // Local player encodes sync bits
             var localEncode = _bitLayer.NewSubStateMachine("Local encode");
             entry.TransitionsTo(localEncode).When(_bitLayer.BoolParameter("IsLocal").IsTrue());
             localEncode.TransitionsTo(localEncode);
 
-            var localAnimationStates = new List<AacFlState>();
-            Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(localEncode), new AacFlIntDecisionParameter(_paramSendAnimId, _numberOfBits), ref localAnimationStates);
-            for (int i = 0; i < localAnimationStates.Count; i++)
+            foreach (var (state, param) in Utils.CreateBinarySearchTree(
+                new AacFlStateMachineWrapped(localEncode),
+                new AacFlIntDecisionParameter(_paramSendAnimId, _numberOfBits)))
             {
-                localAnimationStates[i].State.name = $"Send {i}";
-                localAnimationStates[i].Exits().Automatically();
-                for (int j = 0; j < _paramSendAnimIdBitsList.Count(); j++)
-                    localAnimationStates[i].Drives(_paramSendAnimIdBitsList[j], (i & (1 << j)) > 0);
+                state.State.name = $"Send {param.id}";
+                state.Exits().Automatically();
+                _paramSendAnimIdBitsList.Zip(param.GetBits(), (p, b) => state.Drives(p, b));
             }
 
-            // TODO: drive contacts directly instead of decoding
             // Remote player decodes sync bits
             var remoteDecode = _bitLayer.NewSubStateMachine("Remote decode");
             entry.TransitionsTo(remoteDecode).When(_bitLayer.BoolParameter("IsLocal").IsFalse());
             remoteDecode.TransitionsTo(remoteDecode);
 
-            var remoteAnimationStates = new List<AacFlState>();
-            Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(remoteDecode), new AacFlBoolGroupDecisionParameter(_paramSendAnimIdBits, _numberOfBits), ref remoteAnimationStates);
-            for (int i = 0; i < remoteAnimationStates.Count; i++)
+            foreach (var (state, param) in Utils.CreateBinarySearchTree(
+                new AacFlStateMachineWrapped(remoteDecode),
+                new AacFlBoolGroupDecisionParameter(_paramSendAnimIdBits, _numberOfBits)))
             {
-                remoteAnimationStates[i].State.name = $"Receive {i}";
-                remoteAnimationStates[i].Drives(_paramSendAnimId, i);
-                remoteAnimationStates[i].Exits().Automatically();
+                state.State.name = $"Receive {param.id}";
+                state.Drives(_paramSendAnimId, param.id);
+                state.Exits().Automatically();
             }
         }
 
@@ -569,56 +565,49 @@ namespace BefuddledLabs.OpenSyncDance
         private void GenerateReceiveLayer()
         {
             var readyState = _recvLayer.NewState("Ready");
-            var bufferState = _recvLayer.NewState("Buffer");
             var danceState = _recvLayer.NewSubStateMachine("Dance");
-            var doneState = _recvLayer.NewState("Done");
 
-            
             // Ugly thing to not IK sync the animation
-            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.Head);
-            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftHand);
-            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.RightHand);
-            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.Hip);
-            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFoot);
-            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFoot);
-            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFingers);
-            bufferState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFingers);
-            
-            // Ugly thing to turn IK sync back on
-            doneState.TrackingTracks(AacAv3.Av3TrackingElement.Head);
-            doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftHand);
-            doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightHand);
-            doneState.TrackingTracks(AacAv3.Av3TrackingElement.Hip);
-            doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftFoot);
-            doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightFoot);
-            doneState.TrackingTracks(AacAv3.Av3TrackingElement.LeftFingers);
-            doneState.TrackingTracks(AacAv3.Av3TrackingElement.RightFingers);
+            readyState.TrackingTracks(AacAv3.Av3TrackingElement.Head);
+            readyState.TrackingTracks(AacAv3.Av3TrackingElement.LeftHand);
+            readyState.TrackingTracks(AacAv3.Av3TrackingElement.RightHand);
+            readyState.TrackingTracks(AacAv3.Av3TrackingElement.Hip);
+            readyState.TrackingTracks(AacAv3.Av3TrackingElement.LeftFoot);
+            readyState.TrackingTracks(AacAv3.Av3TrackingElement.RightFoot);
+            readyState.TrackingTracks(AacAv3.Av3TrackingElement.LeftFingers);
+            readyState.TrackingTracks(AacAv3.Av3TrackingElement.RightFingers);
 
             danceState.PlayableEnables(VRC_PlayableLayerControl.BlendableLayer.Action);
-            doneState.PlayableDisables(VRC_PlayableLayerControl.BlendableLayer.Action);
-
-            doneState.Exits().Automatically();
+            readyState.PlayableDisables(VRC_PlayableLayerControl.BlendableLayer.Action);
 
             // Transition to dance blend tree whenever an animation is triggered
             readyState.TransitionsFromEntry();
-            readyState.TransitionsTo(bufferState).When(_paramRecvBits.IsAnyTrue());
-            bufferState.TransitionsTo(danceState).When(_paramRecvBits.IsAnyTrue()); 
-            bufferState.TransitionsTo(readyState).Automatically().WithTransitionDurationSeconds(_animDelay);
-            danceState.TransitionsTo(doneState);
+            readyState.TransitionsTo(danceState).When(_paramRecvBits.IsAnyTrue());
+            danceState.TransitionsTo(readyState);
 
-            var animationStates = new List<AacFlState>();
             var paramRecvBitsWrapped = new AacFlBoolGroupDecisionParameter(_paramRecvBits, _numberOfBits);
-            Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(danceState), paramRecvBitsWrapped, ref animationStates);
-
-            foreach (var animationState in animationStates)
-                animationState.Exits().When(paramRecvBitsWrapped.IsZeroed());
-
-            for (int i = 1; i < _animations.Count + 1; i++)
+            foreach (var (state, param) in Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(danceState), paramRecvBitsWrapped))
             {
-                var currentState = animationStates[i];
-                var currentSyncedAnimation = _animations[i - 1];
-                if (currentSyncedAnimation.loopAnimation != null)
-                    currentState.WithAnimation(currentSyncedAnimation.loopAnimation);
+                state.Exits().When(param.ExitCondition);
+
+                if (param.id == 0)
+                    continue;
+                if (param.id > _animations.Count)
+                    break;
+
+                var item = _animations[param.id - 1];
+                if (!item.loopAnimation)
+                    continue;
+
+                state.WithAnimation(item.loopAnimation);
+                state.TrackingAnimates(AacAv3.Av3TrackingElement.Head);
+                state.TrackingAnimates(AacAv3.Av3TrackingElement.LeftHand);
+                state.TrackingAnimates(AacAv3.Av3TrackingElement.RightHand);
+                state.TrackingAnimates(AacAv3.Av3TrackingElement.Hip);
+                state.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFoot);
+                state.TrackingAnimates(AacAv3.Av3TrackingElement.RightFoot);
+                state.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFingers);
+                state.TrackingAnimates(AacAv3.Av3TrackingElement.RightFingers);
             }
         }
 

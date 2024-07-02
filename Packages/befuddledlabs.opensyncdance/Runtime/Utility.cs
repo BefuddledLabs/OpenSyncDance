@@ -27,30 +27,35 @@ namespace BefuddledLabs.OpenSyncDance
         /// <summary>
         /// Creates a binary tree that maps a bool parameter list to a series of states.
         /// </summary>
-        static public void CreateBinarySearchTree(IAacFlMachineLayerWrapper parent, IAacFlDecisionParameter param, ref List<AacFlState> states, int depth = 0) {
-            if (depth + 1 >= param.bitCount) {
-                var state_0 = parent.NewState("0");
-                var state_1 = parent.NewState("1");
+        static public IEnumerable<(AacFlState state, AacFlDecisionParameter param)> CreateBinarySearchTree(IAacFlMachineLayerWrapper parent, AacFlDecisionParameter param) {
+            // if next layer is last
 
-                parent.EntryTransitionsTo(state_0).When(param.IsZeroBranch(depth));
+            if (param.depth + 1 >= param.bitCount) {
+                var state_0 = parent.NewState($"bit[{param.GetBitIndex()}] == 0");
+                var state_1 = parent.NewState($"bit[{param.GetBitIndex()}] == 1");
+
+                parent.EntryTransitionsTo(state_0).When(param.Is0Branch());
                 parent.EntryTransitionsTo(state_1);
 
-                states.Add(state_0);
-                states.Add(state_1);
+                yield return (state_0, param.As0Branch());
+                yield return (state_1, param.As1Branch());
             }
             else
             {
-                var state_0 = parent.NewSubStateMachine($"SearchTree_{depth}_false");
-                var state_1 = parent.NewSubStateMachine($"SearchTree_{depth}_true");
+                var state_0 = parent.NewSubStateMachine($"bit[{param.GetBitIndex()}] == 0");
+                var state_1 = parent.NewSubStateMachine($"bit[{param.GetBitIndex()}] == 1");
 
                 state_0.Exits();
                 state_1.Exits();
 
-                parent.EntryTransitionsTo(state_0).When(param.IsZeroBranch(depth));
+                parent.EntryTransitionsTo(state_0).When(param.Is0Branch());
                 parent.EntryTransitionsTo(state_1);
 
-                CreateBinarySearchTree(new AacFlStateMachineWrapped(state_0), param.As0Branch(depth), ref states, depth + 1);
-                CreateBinarySearchTree(new AacFlStateMachineWrapped(state_1), param.As1Branch(depth), ref states, depth + 1);
+                // recurse
+                foreach (var result in CreateBinarySearchTree(new AacFlStateMachineWrapped(state_0), param.As0Branch()))
+                    yield return result;
+                foreach (var result in CreateBinarySearchTree(new AacFlStateMachineWrapped(state_1), param.As1Branch()))
+                    yield return result;
             }
         }
     }
