@@ -383,6 +383,7 @@ namespace BefuddledLabs.OpenSyncDance
             {
                 if (GUILayout.Button("Download Missing AudioClips")) 
                 {
+                    EditorGUI.BeginChangeCheck();
                     foreach (var anim in _self.animations) 
                     {
                         if (anim.audioType != SyncedAnimationAudioType.Youtube)
@@ -407,6 +408,8 @@ namespace BefuddledLabs.OpenSyncDance
                             anim.name,
                             TimeSpan.FromSeconds(len));
                     }
+                    if (EditorGUI.EndChangeCheck())
+                        EditorUtility.SetDirty(_self);
                 }
             }
             else 
