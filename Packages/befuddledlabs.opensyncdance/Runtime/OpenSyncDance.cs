@@ -534,6 +534,8 @@ namespace BefuddledLabs.OpenSyncDance
                 var currentSyncedAnimation = _animations[i - 1];
                 var danceState = _sendLayer.NewState($"Dance {currentSyncedAnimation.name}");
                 
+                var enabled = _sendLayer.BoolParameter("OSD_Enabled");
+                
                 var entryMusicState = _sendLayer.NewState($"Entry Music {currentSyncedAnimation.name}");
                 var loopMusicState = _sendLayer.NewState($"Loop Music {currentSyncedAnimation.name}");
                 var exitMusicState = _sendLayer.NewState($"Exit Music {currentSyncedAnimation.name}");
@@ -572,7 +574,7 @@ namespace BefuddledLabs.OpenSyncDance
                         });
                 }
 
-                readyState.TransitionsTo(danceState).When(_paramSendAnimId.IsEqualTo(i));
+                readyState.TransitionsTo(danceState).When(_paramSendAnimId.IsEqualTo(i)).And(enabled.IsTrue());
                 var musicConditions = danceState.TransitionsTo(entryMusicState).WhenConditions();
 
                 var recvParamNames = _paramRecvBits.ToList();
@@ -587,7 +589,7 @@ namespace BefuddledLabs.OpenSyncDance
                     }
                 }
 
-                var toggleClip = _aac.NewClip().Animating(a => ToggleBits(a));
+                var toggleClip = _aac.NewClip().Animating(ToggleBits);
 
                 danceState.WithAnimation(toggleClip);
                 entryMusicState.WithAnimation(_aac.NewClip().Animating(a => {
@@ -601,16 +603,29 @@ namespace BefuddledLabs.OpenSyncDance
                 loopMusicState.WithAnimation(toggleClip);
                 exitMusicState.WithAnimation(toggleClip);
 
-                entryMusicState.TransitionsTo(loopMusicState).Automatically();
+                var len = 0f;
+                if (currentSyncedAnimation.entry.animationClip != null)
+                    len = currentSyncedAnimation.entry.animationClip.length;
+                entryMusicState.TransitionsTo(loopMusicState).Automatically().WithTransitionDurationSeconds(len);
+                
                 loopMusicState.TransitionsTo(exitMusicState).When(_paramSendAnimId.IsNotEqualTo(i));
-                exitMusicState.TransitionsTo(exitState).Automatically();
+                
+                if (currentSyncedAnimation.exit.animationClip != null)
+                    len = currentSyncedAnimation.exit.animationClip.length;
+                exitMusicState.TransitionsTo(exitState).Automatically().WithTransitionDurationSeconds(len);
             }
         }
 
         private void GenerateReceiveLayer()
         {
             var readyState = _recvLayer.NewState("Ready");
+            var lockState = _recvLayer.NewState("Lock");
             var danceState = _recvLayer.NewSubStateMachine("Dance");
+            
+            var enabled = _recvLayer.BoolParameter("OSD_Enabled");
+
+            readyState.TransitionsTo(lockState).When(enabled.IsFalse());
+            lockState.TransitionsTo(readyState).When(enabled.IsTrue());
 
             // Ugly thing to not IK sync the animation
             readyState.TrackingTracks(AacAv3.Av3TrackingElement.Head);
@@ -739,7 +754,7 @@ namespace BefuddledLabs.OpenSyncDance
             const int animsPerPage = 7;
             // The last page can contain one more than the usual anims per page, so subtract
             // one from the total. Then use 'divisor minus 1'-trick for a ceiling div.
-            int numPages = (_animations.Count + animsPerPage - 2) / animsPerPage;
+            int numPages = (_animations.Count + animsPerPage - 2 + 1) / animsPerPage;
 
             // Create a path of folders
             List<string> assetFolderPath = new() { "Assets", "OpenSyncDance", _self.assetKey };
@@ -779,6 +794,14 @@ namespace BefuddledLabs.OpenSyncDance
                     defaultValue = 0,
                 });
             }
+            
+            tempParams.Add(new () {
+                name = $"OSD_Enabled",
+                valueType = VRCExpressionParameters.ValueType.Bool,
+                saved = true,
+                networkSynced = true,
+                defaultValue = 1,
+            });
 
             _vrcParams.parameters = tempParams.ToArray();
 
@@ -805,14 +828,27 @@ namespace BefuddledLabs.OpenSyncDance
             }
 
             // Setup menus
+            _vrcMenus[0].controls.Add(new VRCExpressionsMenu.Control
+            {
+                name = "Enabled",
+                parameter = new VRCExpressionsMenu.Control.Parameter()
+                {
+                    name = "OSD_Enabled",
+                },
+                type = VRCExpressionsMenu.Control.ControlType.Toggle,
+                value = 1,
+            });
+
+            var totalAnims = 0;
             for (int pageId = 0, animationId = 0; pageId < numPages; pageId++)
             {
                 bool isLastPage = pageId == numPages - 1;
-                int animsOnThisPage = animsPerPage + (isLastPage ? 1 : 0);
+                bool isFirstPage = pageId == 0;
+                int animsOnThisPage = animsPerPage + (isLastPage ? 1 : 0) - (isFirstPage ? 1 : 0);
 
                 // Skip animations that we already put in pages, then take enough to fill the page.
                 // Map the taken items to a VRC menu button.
-                _vrcMenus[pageId].controls.AddRange(_animations.Skip(animsPerPage * pageId).Take(animsOnThisPage).Select((SyncedEmote anim) =>
+                _vrcMenus[pageId].controls.AddRange(_animations.Skip(totalAnims).Take(animsOnThisPage).Select((SyncedEmote anim) =>
                 {
                     animationId++;
                     return new VRCExpressionsMenu.Control
@@ -827,6 +863,8 @@ namespace BefuddledLabs.OpenSyncDance
                         value = animationId,
                     };
                 }));
+
+                totalAnims += animsOnThisPage;
             }
 
             AssetDatabase.SaveAssets();

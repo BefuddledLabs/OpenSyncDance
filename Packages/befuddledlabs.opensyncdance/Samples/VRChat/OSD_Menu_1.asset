@@ -13,6 +13,16 @@ MonoBehaviour:
   m_Name: OSD_Menu_1
   m_EditorClassIdentifier: 
   controls:
+  - name: Ankha
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_SendAnim
+    value: 7
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
   - name: Arona
     icon: {fileID: 0}
     type: 102

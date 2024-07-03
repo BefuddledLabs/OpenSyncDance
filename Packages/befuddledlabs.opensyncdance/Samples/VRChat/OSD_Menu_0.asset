@@ -23,6 +23,16 @@ MonoBehaviour:
     subMenu: {fileID: 11400000, guid: 9e5d6b27b4883cb42a0bac1a0a48148f, type: 2}
     subParameters: []
     labels: []
+  - name: Enabled
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_Enabled
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
   - name: Dance
     icon: {fileID: 0}
     type: 102
@@ -79,16 +89,6 @@ MonoBehaviour:
     parameter:
       name: OSD_SendAnim
     value: 6
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  - name: Ankha
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: OSD_SendAnim
-    value: 7
     style: 0
     subMenu: {fileID: 0}
     subParameters: []
