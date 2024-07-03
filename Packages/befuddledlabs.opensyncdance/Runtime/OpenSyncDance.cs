@@ -522,9 +522,11 @@ namespace BefuddledLabs.OpenSyncDance
         private void GenerateSendLayer()
         {
             var readyState = _sendLayer.NewState("Ready");
+            var lockState = _sendLayer.NewState("Lock");
             var exitState = _sendLayer.NewState("Done");
 
-            readyState.TransitionsFromEntry();
+            readyState.TransitionsTo(lockState).When(_paramRecvBits.IsAnyTrue());
+            lockState.TransitionsTo(readyState).When(_paramRecvBits.AreFalse());
             exitState.Exits().Automatically().WithTransitionDurationSeconds(0.2f);
 
             for (int i = 1; i < _animations.Count + 1; i++)
