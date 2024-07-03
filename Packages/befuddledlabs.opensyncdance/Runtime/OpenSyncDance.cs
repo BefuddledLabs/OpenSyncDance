@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using AnimatorAsCode.V1;
 using AnimatorAsCode.V1.VRC;
 using UnityEditor;
@@ -59,6 +58,15 @@ auto
 
 namespace BefuddledLabs.OpenSyncDance
 {
+    public static class GUIStyle {
+        public static int LabelWidth = 50;
+        
+        public static UnityEngine.GUIStyle Light    = new() {normal = new GUIStyleState {textColor = new Color32(0xF6, 0xBA, 0xFB, 0xFF)}};
+        public static UnityEngine.GUIStyle Mid      = new() {normal = new GUIStyleState {textColor = new Color32(0xE2, 0x6C, 0xD7, 0xFF)}};
+        public static UnityEngine.GUIStyle Dark     = new() {normal = new GUIStyleState {textColor = new Color32(0x97, 0x29, 0xFC, 0xFF)}};
+        public static UnityEngine.GUIStyle Black    = new() {normal = new GUIStyleState {textColor = new Color32(0x11, 0x00, 0x2A, 0xFF)}};
+    }
+    
     [Serializable]
     public enum AudioType 
     {
@@ -76,7 +84,8 @@ namespace BefuddledLabs.OpenSyncDance
     }
     
     [Serializable]
-    public class AnimationAudio {
+    public class AnimationAudio 
+    {
         public AudioClip audioClip;
         public AudioType audioType;
 
@@ -90,22 +99,29 @@ namespace BefuddledLabs.OpenSyncDance
     [CustomPropertyDrawer(typeof(AnimationAudio))]
     public class AnimationAudioDrawer : PropertyDrawer
     {
-        ExtraGUI.GUIBuilderElement GetLayout(SerializedProperty property)
-            => ExtraGUI.Builder(property)
+        ExtraGUI.GUIBuilderElement GetLayout(SerializedProperty property) 
+        {
+            var ui = ExtraGUI.Builder(property)
                 .Draw(x => x
-                    .DrawField("audioClip", "audio", GUIStyle.none)
-                    .DrawField("audioType", "type", GUIStyle.none)
-                    .DrawHorizontally())
-                .Draw(x => x
-                    .DrawField("audioUrl", "URL", GUIStyle.none)
-                    .DrawField("startTimeStamp", "start", GUIStyle.none)
-                    .DrawField("endTimeStamp", "end", GUIStyle.none)
-                    .DrawHorizontally())
-                .DrawVertically();
+                    .DrawField("audioClip", "audio", GUIStyle.Mid)
+                    .DrawEmpty()
+                    .DrawField("audioType", "type", GUIStyle.Mid)
+                    .DrawHorizontally());
+            if ((AudioType)property.FindPropertyRelative("audioType").boxedValue == AudioType.Youtube) {
+                ui.Draw(x => x
+                    .DrawField("audioUrl", "URL", GUIStyle.Dark)
+                    .DrawField("startTimeStamp", "start", GUIStyle.Dark)
+                    .DrawField("endTimeStamp", "end", GUIStyle.Dark)
+                    .DrawHorizontally());
+
+            }
+            return ui.DrawVertically();
+        }
 
         public override void OnGUI(Rect space, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(space, label, property);
+            EditorGUIUtility.labelWidth = GUIStyle.LabelWidth;
             
             GetLayout(property).Draw(space);
 
@@ -117,8 +133,10 @@ namespace BefuddledLabs.OpenSyncDance
     }
 
     [Serializable]
-    public class SyncedAnimation
+    public class SyncedAnimation 
     {
+        public bool expanded;
+        
         public AnimationClip animationClip;
         public bool animationUseFootIK;
         public AudioSyncMethod syncMethod;
@@ -131,16 +149,17 @@ namespace BefuddledLabs.OpenSyncDance
         ExtraGUI.GUIBuilderElement GetLayout(SerializedProperty property)
             => ExtraGUI.Builder(property)
                 .Draw(x => x
-                    .DrawField("animationClip", "animation", GUIStyle.none)
-                    .DrawField("animationUseFootIK", "foot ik", GUIStyle.none)
-                    .DrawField("syncMethod", "sync", GUIStyle.none)
+                    .DrawField("animationClip", "anim", GUIStyle.Light)
+                    .DrawField("animationUseFootIK", "foot ik", GUIStyle.Light)
+                    .DrawField("syncMethod", "sync", GUIStyle.Light)
                     .DrawHorizontally())
-                .DrawField("audio", "audio", GUIStyle.none)
-                .DrawVertically();
+                .DrawField("audio", "audio", UnityEngine.GUIStyle.none)
+                .DrawFoldout("expanded");
 
         public override void OnGUI(Rect space, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(space, label, property);
+            EditorGUIUtility.labelWidth = GUIStyle.LabelWidth;
 
             GetLayout(property).Draw(space);
 
@@ -157,6 +176,8 @@ namespace BefuddledLabs.OpenSyncDance
         public Texture2D icon;
         public string name;
 
+        public bool expanded;
+
         public SyncedAnimation entry;
         public SyncedAnimation loop;
         public SyncedAnimation exit;
@@ -165,19 +186,21 @@ namespace BefuddledLabs.OpenSyncDance
     [CustomPropertyDrawer(typeof(SyncedEmote))]
     public class SyncedEmoteDrawer : PropertyDrawer
     {
-        ExtraGUI.GUIBuilderElement GetLayout(SerializedProperty property)
-            => ExtraGUI.Builder(property)
+        ExtraGUI.GUIBuilderElement GetLayout(SerializedProperty property) {
+            return ExtraGUI.Builder(property)
                 .Draw(x => x
-                    .DrawField("name", "name", GUIStyle.none)
+                    .DrawField("name", "name", GUIStyle.Dark)
                     .DrawHorizontally())
-                .DrawField("entry", "[P]", GUIStyle.none)
-                .DrawField("loop", "[L]", GUIStyle.none)
-                .DrawField("exit", "[S]", GUIStyle.none)
-                .DrawVertically();
+                .DrawField("entry", "Entry", GUIStyle.Mid)
+                .DrawField("loop", "Loop", GUIStyle.Mid)
+                .DrawField("exit", "Exit", GUIStyle.Mid)
+                .DrawFoldout("expanded", property.FindPropertyRelative("name").stringValue);
+        }
 
         public override void OnGUI(Rect space, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(space, label, property);
+            EditorGUIUtility.labelWidth = GUIStyle.LabelWidth;
 
             GetLayout(property).Draw(space);
 
@@ -185,7 +208,7 @@ namespace BefuddledLabs.OpenSyncDance
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-            => GetLayout(property).height;
+            => GetLayout(property).height + 4;
     }
 
     public class OpenSyncDance : MonoBehaviour, IEditorOnly
@@ -341,8 +364,8 @@ namespace BefuddledLabs.OpenSyncDance
             assetContainer_property = serializedObject.FindProperty("animatorControllerFX");
             EditorGUILayout.PropertyField(assetContainer_property, true);
 
-            var animation_property = serializedObject.FindProperty("animations");
-            EditorGUILayout.PropertyField(animation_property, true);
+            var emote_property = serializedObject.FindProperty("animations");
+            EditorGUILayout.PropertyField(emote_property, true);
 
             // Advanced settings for smarty pants. You probably don't need this.
             if (_uiAdvancedFoldoutState = EditorGUILayout.BeginFoldoutHeaderGroup(_uiAdvancedFoldoutState, "Advanced"))
@@ -362,36 +385,33 @@ namespace BefuddledLabs.OpenSyncDance
             {
                 EditorGUILayout.EndFoldoutHeaderGroup();
             }
-
-
-            serializedObject.ApplyModifiedProperties();
             
             if (DownloadManager.Hasytdlp && DownloadManager.HasFFmpeg) 
             {
                 if (GUILayout.Button("Download Missing AudioClips")) 
                 {
                     EditorGUI.BeginChangeCheck();
-                    foreach (var animations in _self.animations) 
-                    {
-                        var anims = new [] {
-                            animations.entry,
-                            animations.loop,
-                            animations.exit
+                    for (var index = 0; index < emote_property.arraySize; index++) {
+                        var syncedEmote = emote_property.GetArrayElementAtIndex(index);
+                        var anims = new[] {
+                            syncedEmote.FindPropertyRelative("entry"),
+                            syncedEmote.FindPropertyRelative("loop"),
+                            syncedEmote.FindPropertyRelative("exit"),
                         };
 
-                        foreach (var anim in anims)
-                        {
-                            if (anim.audio.audioType != AudioType.Youtube)
+                        foreach (var anim in anims) {
+                            var animObject = (SyncedAnimation)anim.boxedValue;
+                            if (animObject.audio.audioType != AudioType.Youtube)
                                 continue;
-                            if (anim.audio.audioClip != null)
+                            if (animObject.audio.audioClip != null)
                                 continue;
-                            if (anim.animationClip == null)
+                            if (animObject.animationClip == null)
                                 continue;
-                            
-                            anim.audio.audioClip = DownloadManager.DownloadYouTubeLink(anim);
+
+                            anim.FindPropertyRelative("audio").FindPropertyRelative("audioClip").boxedValue = DownloadManager.DownloadYouTubeLink(animObject);
                         }
-                        
                     }
+
                     if (EditorGUI.EndChangeCheck())
                         EditorUtility.SetDirty(_self);
                 }
@@ -402,6 +422,8 @@ namespace BefuddledLabs.OpenSyncDance
                     DownloadManager.DownloadBoth();
             }
 
+            serializedObject.ApplyModifiedProperties();
+            
             if (GUILayout.Button("Generate!"))
             {
                 // TODO: create new animation controller if it doesn't exist
@@ -611,6 +633,7 @@ namespace BefuddledLabs.OpenSyncDance
             {
                 var loopState = parent.NewState("loopState");
                 var exitState = parent.NewState("exitState");
+                entryState.TransitionsTo(loopState).Automatically();
                 loopState.TransitionsTo(exitState).When(param.ExitCondition);
                 exitState.Exits().Automatically();
 
@@ -629,6 +652,10 @@ namespace BefuddledLabs.OpenSyncDance
                 entryState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFoot);
                 entryState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftFingers);
                 entryState.TrackingAnimates(AacAv3.Av3TrackingElement.RightFingers);
+
+                entryState.State.iKOnFeet = item.entry.animationUseFootIK;
+                loopState.State.iKOnFeet = item.loop.animationUseFootIK;
+                exitState.State.iKOnFeet = item.exit.animationUseFootIK;
 
                 if (item.entry.animationClip != null)
                     entryState.WithAnimation(item.entry.animationClip);

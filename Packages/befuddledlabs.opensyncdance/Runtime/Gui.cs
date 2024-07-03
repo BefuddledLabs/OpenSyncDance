@@ -33,9 +33,9 @@ namespace BefuddledLabs.OpenSyncDance
             return Enumerable.Range(0, num).Select(i => new Rect(space.x, space.y + dy * i, space.width, h));
         }
 
-        public static void DrawPropertyFieldWithLabel(Rect rect, SerializedProperty property, string label, GUIStyle labelStyle)
+        public static void DrawPropertyFieldWithLabel(Rect rect, SerializedProperty property, string label, UnityEngine.GUIStyle labelStyle)
         {
-            if (labelStyle != GUIStyle.none)
+            if (labelStyle != UnityEngine.GUIStyle.none)
             {
                 EditorGUI.LabelField(rect, label, labelStyle);
                 rect.x += EditorGUIUtility.labelWidth;
@@ -44,9 +44,9 @@ namespace BefuddledLabs.OpenSyncDance
             EditorGUI.PropertyField(rect, property, GUIContent.none);
         }
 
-        public static void SliderFieldWithLabel(Rect rect, SerializedProperty property, float leftValue, float rightValue, string label, GUIStyle labelStyle)
+        public static void SliderFieldWithLabel(Rect rect, SerializedProperty property, float leftValue, float rightValue, string label, UnityEngine.GUIStyle labelStyle)
         {
-            if (labelStyle != GUIStyle.none)
+            if (labelStyle != UnityEngine.GUIStyle.none)
             {
                 EditorGUI.LabelField(rect, label, labelStyle);
                 rect.x += EditorGUIUtility.labelWidth;
@@ -96,16 +96,19 @@ namespace BefuddledLabs.OpenSyncDance
                 return this;
             }
             
-            public GUIBuilder DrawField(string field, string label, GUIStyle style)
+            public GUIBuilder DrawEmpty()
+                => Draw(_ => {});
+            
+            public GUIBuilder DrawField(string field, string label, UnityEngine.GUIStyle style)
                 => DrawField(_property.FindPropertyRelative(field), label, style);
 
-            public GUIBuilder DrawField(SerializedProperty property, string label, GUIStyle style)
+            public GUIBuilder DrawField(SerializedProperty property, string label, UnityEngine.GUIStyle style)
                 => Draw((Rect space) => DrawPropertyFieldWithLabel(space, property, label, style), EditorGUI.GetPropertyHeight(property));
                 
-            public GUIBuilder DrawSlider(string field, float min, float max, string label, GUIStyle style)
+            public GUIBuilder DrawSlider(string field, float min, float max, string label, UnityEngine.GUIStyle style)
                 => DrawSlider(_property.FindPropertyRelative(field), min, max, label, style);
 
-            public GUIBuilder DrawSlider(SerializedProperty property, float min, float max, string label, GUIStyle style)
+            public GUIBuilder DrawSlider(SerializedProperty property, float min, float max, string label, UnityEngine.GUIStyle style)
                 => Draw((Rect space) => SliderFieldWithLabel(space, property, min, max, label, style), EditorGUI.GetPropertyHeight(property));
 
             public GUIBuilderElement DrawHorizontally(float padding = 4f)
@@ -126,7 +129,26 @@ namespace BefuddledLabs.OpenSyncDance
                         item.Draw(new Rect(space.x, space.y, space.width, item.height));
                         space.y += item.height + padding;
                     }
-                }, _itemsToDraw.Sum(x => x.height + padding * (_itemsToDraw.Count - 1)));
+                }, _itemsToDraw.Sum(x => x.height) + padding * (_itemsToDraw.Count - 1));
+            }
+
+            public GUIBuilderElement DrawFoldout(string foldoutField, string label = "", float padding = 4f) 
+            {
+                var foldoutProperty = _property.FindPropertyRelative(foldoutField);
+                return new GUIBuilderElement((Rect space) => {
+                    foldoutProperty.boolValue = EditorGUI.Foldout(new Rect(space.x, space.y, space.width, 20), foldoutProperty.boolValue, label);
+                    if (foldoutProperty.boolValue) 
+                    {
+                        space.y += 20 + padding;
+                        for (int i = 0; i < _itemsToDraw.Count; i++)
+                        {
+                            var item = _itemsToDraw[i];
+                            item.Draw(new Rect(space.x, space.y, space.width, item.height));
+                            space.y += item.height + padding;
+                        }
+                    }
+                    _property.serializedObject.ApplyModifiedProperties();
+                }, foldoutProperty.boolValue ? _itemsToDraw.Sum(x => x.height) + padding * _itemsToDraw.Count + 20 : 20);
             }
         }
     }
