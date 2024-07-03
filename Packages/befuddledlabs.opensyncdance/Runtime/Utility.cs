@@ -27,7 +27,7 @@ namespace BefuddledLabs.OpenSyncDance
         /// <summary>
         /// Creates a binary tree that maps a bool parameter list to a series of states.
         /// </summary>
-        static public IEnumerable<(AacFlState state, AacFlDecisionParameter param)> CreateBinarySearchTree(IAacFlMachineLayerWrapper parent, AacFlDecisionParameter param) {
+        static public IEnumerable<(AacFlState state, IAacFlMachineLayerWrapper parent, AacFlDecisionParameter param)> CreateBinarySearchTree(IAacFlMachineLayerWrapper parent, AacFlDecisionParameter param) {
             // if next layer is last
 
             if (param.depth + 1 >= param.bitCount) {
@@ -37,8 +37,8 @@ namespace BefuddledLabs.OpenSyncDance
                 parent.EntryTransitionsTo(state_0).When(param.Is0Branch());
                 parent.EntryTransitionsTo(state_1);
 
-                yield return (state_0, param.As0Branch());
-                yield return (state_1, param.As1Branch());
+                yield return (state_0, parent, param.As0Branch());
+                yield return (state_1, parent, param.As1Branch());
             }
             else
             {

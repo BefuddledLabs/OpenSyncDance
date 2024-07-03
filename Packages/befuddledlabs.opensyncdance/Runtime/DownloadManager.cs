@@ -175,7 +175,15 @@ namespace BefuddledLabs.OpenSyncDance
             return false;
         }
 
-        public static AudioClip DownloadYoutubeLink(string youtubeLink, string start, string end, string outputFileName, TimeSpan animLength) 
+        public static AudioClip DownloadYouTubeLink(SyncedAnimation anim) 
+        {
+            var animLength = TimeSpan.Zero;
+            if (anim.animationClip != null)
+                animLength = TimeSpan.FromSeconds(anim.animationClip.length);
+            return DownloadYouTubeLink(anim.audio.audioUrl, anim.audio.startTimeStamp, anim.audio.endTimeStamp, anim.animationClip.name, animLength);
+        }
+
+        public static AudioClip DownloadYouTubeLink(string youtubeLink, string start, string end, string outputFileName, TimeSpan animLength) 
         {
             if (!TryParseTimeSpan(start, out var startTime))
             {
@@ -202,11 +210,11 @@ namespace BefuddledLabs.OpenSyncDance
                 return null;
             }
 
-            DownloadYoutubeLink(youtubeLink, startTime, endTime, outputFileName);
+            DownloadYouTubeLink(youtubeLink, startTime, endTime, outputFileName);
 
             return AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/OpenSyncDance/Audio/{outputFileName}.wav");
         }
-        public static void DownloadYoutubeLink(string youtubeLink, TimeSpan start, TimeSpan end, string outputFileName) 
+        public static void DownloadYouTubeLink(string youtubeLink, TimeSpan start, TimeSpan end, string outputFileName) 
         {
             CreateAudioFolder();
             
