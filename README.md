@@ -31,6 +31,7 @@ Open Sync Dance is a utility and Unity prefab to have player-synchronized dances
 - SAR Default by [*Krysiek*](https://github.com/Krysiek)
 - Zufolo Impazzito by [*Krysiek*](https://github.com/Krysiek)
 - Distraction by *Spooki Boy*
+- Geddan by [*Nara*](https://github.com/Naraenda)
 
 Want to add to this list? [Check the contributing guide for animations!](/Docs/contributing_animations.md)
 
