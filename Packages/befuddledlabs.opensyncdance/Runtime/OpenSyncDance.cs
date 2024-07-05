@@ -403,9 +403,9 @@ namespace BefuddledLabs.OpenSyncDance
                             var animObject = (SyncedAnimation)anim.boxedValue;
                             if (animObject.audio.audioType != AudioType.Youtube)
                                 continue;
-                            if (animObject.audio.audioClip != null)
+                            if (animObject.audio.audioClip)
                                 continue;
-                            if (animObject.animationClip == null)
+                            if (!animObject.animationClip)
                                 continue;
 
                             anim.FindPropertyRelative("audio").FindPropertyRelative("audioClip").boxedValue = DownloadManager.DownloadYouTubeLink(animObject);
@@ -541,7 +541,7 @@ namespace BefuddledLabs.OpenSyncDance
                 var exitMusicState = _sendLayer.NewState($"Exit Music {currentSyncedAnimation.name}");
 
                 // Set the audio clip on the audio source
-                if (currentSyncedAnimation.entry.audio.audioClip != null)
+                if (currentSyncedAnimation.entry.audio.audioClip)
                 {
                     entryMusicState.Audio(_audioSource, (a) =>
                         {
@@ -552,7 +552,7 @@ namespace BefuddledLabs.OpenSyncDance
                             a.SetsVolume(0);
                         });
                 }
-                if (currentSyncedAnimation.loop.audio.audioClip != null)
+                if (currentSyncedAnimation.loop.audio.audioClip)
                 {
                     loopMusicState.Audio(_audioSource, (a) =>
                         {
@@ -563,7 +563,7 @@ namespace BefuddledLabs.OpenSyncDance
                             a.SetsVolume(currentSyncedAnimation.loop.audio.volume);
                         });
                 }
-                if (currentSyncedAnimation.exit.audio.audioClip != null)
+                if (currentSyncedAnimation.exit.audio.audioClip)
                 {
                     exitMusicState.Audio(_audioSource, (a) =>
                         {
@@ -598,21 +598,22 @@ namespace BefuddledLabs.OpenSyncDance
                     volume.WithUnit(AacFlUnit.Seconds, (AacFlSettingKeyframes key) => {
                         key.Linear(0.0f, 0.0f);
                         key.Linear(0.2f, currentSyncedAnimation.entry.audio.volume);
+                        if (currentSyncedAnimation.entry.animationClip)
+                            key.Linear(currentSyncedAnimation.entry.animationClip.length, currentSyncedAnimation.entry.audio.volume);
                     });
                 }));
                 loopMusicState.WithAnimation(toggleClip);
                 exitMusicState.WithAnimation(toggleClip);
 
-                var len = 0f;
-                if (currentSyncedAnimation.entry.animationClip != null)
-                    len = currentSyncedAnimation.entry.animationClip.length;
-                entryMusicState.TransitionsTo(loopMusicState).Automatically().WithTransitionDurationSeconds(len);
-                
+                // anim entry (with early exit)
+                entryMusicState.TransitionsTo(exitMusicState).When(_paramSendAnimId.IsNotEqualTo(i));
+                entryMusicState.TransitionsTo(loopMusicState).Automatically();
+
+                // anim loop
                 loopMusicState.TransitionsTo(exitMusicState).When(_paramSendAnimId.IsNotEqualTo(i));
-                
-                if (currentSyncedAnimation.exit.animationClip != null)
-                    len = currentSyncedAnimation.exit.animationClip.length;
-                exitMusicState.TransitionsTo(exitState).Automatically().WithTransitionDurationSeconds(len);
+
+                // anim exit
+                exitMusicState.TransitionsTo(exitState).Automatically();
             }
         }
 
@@ -650,6 +651,7 @@ namespace BefuddledLabs.OpenSyncDance
             {
                 var loopState = parent.NewState("loopState");
                 var exitState = parent.NewState("exitState");
+                entryState.TransitionsTo(exitState).When(param.ExitCondition);
                 entryState.TransitionsTo(loopState).Automatically();
                 loopState.TransitionsTo(exitState).When(param.ExitCondition);
                 exitState.Exits().Automatically();
@@ -674,11 +676,11 @@ namespace BefuddledLabs.OpenSyncDance
                 loopState.State.iKOnFeet = item.loop.animationUseFootIK;
                 exitState.State.iKOnFeet = item.exit.animationUseFootIK;
 
-                if (item.entry.animationClip != null)
+                if (item.entry.animationClip)
                     entryState.WithAnimation(item.entry.animationClip);
-                if (item.loop.animationClip != null)
+                if (item.loop.animationClip)
                     loopState.WithAnimation(item.loop.animationClip);
-                if (item.exit.animationClip != null)
+                if (item.exit.animationClip)
                     exitState.WithAnimation(item.exit.animationClip);
             }
         }
@@ -688,7 +690,7 @@ namespace BefuddledLabs.OpenSyncDance
             // Destroy children >:)
             // TODO: add method to keep certain objects for e.g. props that may be used
             var contactContainer = _self.transform.Find("OSD_Contacts")?.gameObject;
-            while (contactContainer != null) {
+            while (contactContainer) {
                 DestroyImmediate(contactContainer);
                 contactContainer = _self.transform.Find("OSD_Contacts")?.gameObject;
             }
@@ -740,7 +742,7 @@ namespace BefuddledLabs.OpenSyncDance
             where T : ScriptableObject
         {
             var asset = AssetDatabase.LoadAssetAtPath<T>(path);
-            if (asset != null)
+            if (asset)
                 return asset;
 
             asset = CreateInstance<T>();
