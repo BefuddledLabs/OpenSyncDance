@@ -1,0 +1,2 @@
+*.anim filter=lfs diff=lfs merge=lfs -text
+*.controller filter=lfs diff=lfs merge=lfs -text
