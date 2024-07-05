@@ -20,11 +20,9 @@ Here's a list of things that we would be _really super radical_ to add, but we'r
 
 - [California Gurls](https://www.youtube.com/watch?v=nNVwWhTuN-c)
 - [Spooky dance](https://www.youtube.com/watch?v=gzQTBuuv4ss)
-- [Sims Cat Breakdance](https://www.youtube.com/watch?v=ssPUBqqKnfs)
 - [Ultra Dragon Dream Feet](https://www.youtube.com/watch?v=eLYhnBaWOzc)
 - [Specialist](https://www.youtube.com/watch?v=fTczCpIaLAU)
 - [Leek Dance](https://www.youtube.com/watch?v=c17xydS2vgU) - Wow, Miku is so cool.
 - [Shang Abi Dance](https://www.youtube.com/watch?v=7MrYVM1jZ1A)
 - [Toothless](https://www.youtube.com/watch?v=9MCiixIkzUk)
-- [Geddan!](https://www.youtube.com/watch?v=0Li2sAnm9CQ)
 - [Club Penguin Dance](https://www.youtube.com/watch?v=om_POD45fCs)
