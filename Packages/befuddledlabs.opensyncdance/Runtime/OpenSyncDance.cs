@@ -617,6 +617,31 @@ namespace BefuddledLabs.OpenSyncDance
             }
         }
 
+        private void GenerateSoundEnableLayer()
+        {
+            var toggleLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationControllerFX, "SoundToggle");
+            var soundParam = toggleLayer.BoolParameter("OSD_Sound");
+
+            var on = toggleLayer.NewState("On");
+            var inBetween = toggleLayer.NewState("In between");
+            var off = toggleLayer.NewState("Off");
+
+            on.WithAnimation(_aac.NewClip().Toggling(_audioSource.gameObject, true));
+            inBetween.WithAnimation(_aac.NewClip().Toggling(_audioSource.gameObject, true));
+            off.WithAnimation(_aac.NewClip().Toggling(_audioSource.gameObject, false));
+
+            inBetween.Audio(_audioSource, a => {
+                a.StopsPlayingOnEnter();
+                a.StopsPlayingOnExit();
+            });
+
+            on.TransitionsTo(inBetween).When(soundParam.IsFalse());
+            off.TransitionsTo(inBetween).When(soundParam.IsTrue()).And(_paramSendAnimId.IsEqualTo(0));
+
+            inBetween.TransitionsTo(off).When(soundParam.IsFalse());
+            inBetween.TransitionsTo(on).When(soundParam.IsTrue());
+        }
+
         private void GenerateReceiveLayer()
         {
             var readyState = _recvLayer.NewState("Ready");
@@ -733,6 +758,7 @@ namespace BefuddledLabs.OpenSyncDance
             GenerateSyncedBitLayer();
             GenerateSendLayer();
             GenerateReceiveLayer();
+            GenerateSoundEnableLayer();
         }
 
         /// <summary>
@@ -756,7 +782,7 @@ namespace BefuddledLabs.OpenSyncDance
             const int animsPerPage = 7;
             // The last page can contain one more than the usual anims per page, so subtract
             // one from the total. Then use 'divisor minus 1'-trick for a ceiling div.
-            int numPages = (_animations.Count + animsPerPage - 2 + 1) / animsPerPage;
+            int numPages = (_animations.Count + animsPerPage - 2 + 2) / animsPerPage;
 
             // Create a path of folders
             List<string> assetFolderPath = new() { "Assets", "OpenSyncDance", _self.assetKey };
@@ -804,6 +830,14 @@ namespace BefuddledLabs.OpenSyncDance
                 networkSynced = true,
                 defaultValue = 1,
             });
+            
+            tempParams.Add(new () {
+                name = $"OSD_Sound",
+                valueType = VRCExpressionParameters.ValueType.Bool,
+                saved = true,
+                networkSynced = true,
+                defaultValue = 1,
+            });
 
             _vrcParams.parameters = tempParams.ToArray();
 
@@ -828,25 +862,38 @@ namespace BefuddledLabs.OpenSyncDance
                     subMenu = _vrcMenus[pageId + 1],
                 });
             }
+            
+            // Enable Toggle
+            _vrcMenus[0].controls.Add(new VRCExpressionsMenu.Control
+                        {
+                            name = "Enabled",
+                            parameter = new VRCExpressionsMenu.Control.Parameter()
+                            {
+                                name = "OSD_Enabled",
+                            },
+                            type = VRCExpressionsMenu.Control.ControlType.Toggle,
+                            value = 1,
+                        });
+            
+            // Enable Sound
+            _vrcMenus[0].controls.Add(new VRCExpressionsMenu.Control
+                        {
+                            name = "Sound",
+                            parameter = new VRCExpressionsMenu.Control.Parameter()
+                            {
+                                name = "OSD_Sound",
+                            },
+                            type = VRCExpressionsMenu.Control.ControlType.Toggle,
+                            value = 1,
+                        });
 
             // Setup menus
-            _vrcMenus[0].controls.Add(new VRCExpressionsMenu.Control
-            {
-                name = "Enabled",
-                parameter = new VRCExpressionsMenu.Control.Parameter()
-                {
-                    name = "OSD_Enabled",
-                },
-                type = VRCExpressionsMenu.Control.ControlType.Toggle,
-                value = 1,
-            });
-
             var totalAnims = 0;
             for (int pageId = 0, animationId = 0; pageId < numPages; pageId++)
             {
                 bool isLastPage = pageId == numPages - 1;
                 bool isFirstPage = pageId == 0;
-                int animsOnThisPage = animsPerPage + (isLastPage ? 1 : 0) - (isFirstPage ? 1 : 0);
+                int animsOnThisPage = animsPerPage + (isLastPage ? 1 : 0) - (isFirstPage ? 2 : 0);
 
                 // Skip animations that we already put in pages, then take enough to fill the page.
                 // Map the taken items to a VRC menu button.

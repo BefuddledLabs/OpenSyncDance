@@ -13,6 +13,26 @@ MonoBehaviour:
   m_Name: OSD_Menu_1
   m_EditorClassIdentifier: 
   controls:
+  - name: Page 2
+    icon: {fileID: 0}
+    type: 103
+    parameter:
+      name: 
+    value: 1
+    style: 0
+    subMenu: {fileID: 11400000, guid: 1eb934e9f9acb37478a09b6eb90b10fc, type: 2}
+    subParameters: []
+    labels: []
+  - name: Helltaker
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_SendAnim
+    value: 6
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
   - name: Ankha
     icon: {fileID: 0}
     type: 102
@@ -69,26 +89,6 @@ MonoBehaviour:
     parameter:
       name: OSD_SendAnim
     value: 12
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  - name: Geddan
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: OSD_SendAnim
-    value: 13
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  - name: Stock Dancin'
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: OSD_SendAnim
-    value: 14
     style: 0
     subMenu: {fileID: 0}
     subParameters: []

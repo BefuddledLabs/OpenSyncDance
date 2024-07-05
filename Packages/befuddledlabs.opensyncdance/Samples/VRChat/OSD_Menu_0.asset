@@ -33,6 +33,16 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
+  - name: Sound
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_Sound
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
   - name: Dance
     icon: {fileID: 0}
     type: 102
@@ -79,16 +89,6 @@ MonoBehaviour:
     parameter:
       name: OSD_SendAnim
     value: 5
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  - name: Helltaker
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: OSD_SendAnim
-    value: 6
     style: 0
     subMenu: {fileID: 0}
     subParameters: []
