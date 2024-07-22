@@ -19,7 +19,6 @@ Once you have the animation, feel free to open a pull request, open an issue, or
 Here's a list of things that we would be _really super radical_ to add, but we're bad dancers so this list is up for grabs! Do let us know if you're going to work on anything here so someone else doesn't take it. If you just wanna do your own dances, feel free to improvise be creative!
 
 - [California Gurls](https://www.youtube.com/watch?v=nNVwWhTuN-c)
-- [Spooky dance](https://www.youtube.com/watch?v=gzQTBuuv4ss)
 - [Ultra Dragon Dream Feet](https://www.youtube.com/watch?v=eLYhnBaWOzc)
 - [Specialist](https://www.youtube.com/watch?v=fTczCpIaLAU)
 - [Leek Dance](https://www.youtube.com/watch?v=c17xydS2vgU) - Wow, Miku is so cool.

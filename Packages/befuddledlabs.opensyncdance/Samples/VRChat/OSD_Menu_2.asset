@@ -43,3 +43,13 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
+  - name: Spooky Dance
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: OSD_SendAnim
+    value: 16
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
