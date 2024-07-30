@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -103,7 +104,6 @@ namespace BefuddledLabs.OpenSyncDance
             AssetDatabase.Refresh();
         }
 
-        [MenuItem("OpenSyncDance/Download Binaries")]
         public static void DownloadBoth() {
             StartDownloadFFmpeg((a, b) => {
                 StartDownloadYtdlp();
@@ -248,18 +248,25 @@ namespace BefuddledLabs.OpenSyncDance
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
+
+            var downloadAttempts = 3; // Retry the download command a couple of times in case it fails..
+            for (int i = 0; i < downloadAttempts; i++) {
+                var ytdlpProcess = Process.Start(startInfo);
+                if (ytdlpProcess == null) 
+                {
+                    EditorUtility.ClearProgressBar();
+                    EditorUtility.DisplayDialog("Error", "Couldn't Start yt-dlp", "ok");
+                    return;
+                }
             
-            
-            var ytdlpProcess = Process.Start(startInfo);
-            if (ytdlpProcess == null) 
-            {
-                EditorUtility.ClearProgressBar();
-                EditorUtility.DisplayDialog("Error", "Couldn't Start yt-dlp", "ok");
-                return;
+                ytdlpProcess.WaitForExit();
+                AssetDatabase.Refresh();
+
+                if (AssetImporter.GetAtPath(localPath) as AudioImporter)
+                    break;
+                
+                Thread.Sleep(TimeSpan.FromMilliseconds(250));
             }
-            
-            ytdlpProcess.WaitForExit();
-            AssetDatabase.Refresh();
             
             var importer = AssetImporter.GetAtPath(localPath) as AudioImporter;
             if (importer == null) {
@@ -269,7 +276,7 @@ namespace BefuddledLabs.OpenSyncDance
                 AssetDatabase.Refresh();
                 return;
             }
-
+            
             importer.loadInBackground = true;
             
             // Default settings for the downloaded audio file
