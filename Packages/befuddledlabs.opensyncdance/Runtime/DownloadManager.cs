@@ -56,11 +56,13 @@ namespace BefuddledLabs.OpenSyncDance
         /// 2: end timestamp
         /// 3: output file
         /// </summary>
-        private static string ytdlpParams = $"--ffmpeg-location \"{FFmpegPath}\" " // Use this ffmpeg
-            + "-f bestaudio --audio-quality 0 -x --audio-format wav " // Convert to audio file
-            + "--force-keyframes-at-cuts -i {0} --download-sections \"*{1}-{2}\" " // Download specific section of song
-            + "--force-overwrites --no-mtime -v -o \"{3}\" " // Overwrite file and use curret date time
-            + "--retry-sleep 5 --retries 3"; // Retry because youtube can be youtube
+        private static string ytdlpParams =  $"--ffmpeg-location \"{FFmpegPath}\" " // Use this ffmpeg
+                                            + "-f bestaudio --audio-quality 0 -x --audio-format wav " // Convert to audio file
+                                            + "--force-keyframes-at-cuts -i {0} --download-sections \"*{1}-{2}\" " // Download specific section of song
+                                            + "--force-overwrites --no-mtime -v -o \"{3}\" " // Overwrite file and use curret date time
+                                            + "--retry-sleep 5 --retries 3"; // Retry because youtube can be youtube
+
+        private static string ffmpegParams =  "-y -i \"{0}\" -ss {1} -t {2} \"{3}\"";
 
         private static void CreateBinariesFolder() 
         {
@@ -235,23 +237,31 @@ namespace BefuddledLabs.OpenSyncDance
             EditorUtility.DisplayProgressBar("Downloading Youtube link", "", 0);
 
             var songPath = $"{Application.dataPath}/OpenSyncDance/Audio/{outputFileName}";
+            var tempSongPath = $"{Application.dataPath}/OpenSyncDance/Audio/{outputFileName}_temp";
             var localPath = $"Assets/OpenSyncDance/Audio/{outputFileName}.wav";
+            var localTempPath = $"Assets/OpenSyncDance/Audio/{outputFileName}_temp.wav";
             
-            if (File.Exists(songPath))
-                File.Delete(songPath);
+            if (File.Exists(songPath+".wav"))
+                File.Delete(songPath+".wav");
+            if (File.Exists(tempSongPath+".wav"))
+                File.Delete(tempSongPath+".wav");
 
             // Start new process with yt-dlp to download music from YouTube
-            var startInfo = new ProcessStartInfo {
+            var ytdlpStartInfo = new ProcessStartInfo {
                 FileName = ytdlpPath,
-                Arguments = string.Format(ytdlpParams, youtubeLink, TimeSpanToYtdlpString(start), TimeSpanToYtdlpString(end),
-                    songPath),
+                Arguments = string.Format(
+                    ytdlpParams,
+                    youtubeLink,
+                    TimeSpanToYtdlpString(TimeSpan.FromTicks(0)),
+                    TimeSpanToYtdlpString(end + TimeSpan.FromSeconds(1)),
+                    tempSongPath),
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
 
             var downloadAttempts = 3; // Retry the download command a couple of times in case it fails..
             for (int i = 0; i < downloadAttempts; i++) {
-                var ytdlpProcess = Process.Start(startInfo);
+                var ytdlpProcess = Process.Start(ytdlpStartInfo);
                 if (ytdlpProcess == null) 
                 {
                     EditorUtility.ClearProgressBar();
@@ -262,14 +272,13 @@ namespace BefuddledLabs.OpenSyncDance
                 ytdlpProcess.WaitForExit();
                 AssetDatabase.Refresh();
 
-                if (AssetImporter.GetAtPath(localPath) as AudioImporter)
+                if (AssetImporter.GetAtPath(localTempPath) as AudioImporter)
                     break;
                 
                 Thread.Sleep(TimeSpan.FromMilliseconds(250));
             }
             
-            var importer = AssetImporter.GetAtPath(localPath) as AudioImporter;
-            if (importer == null) {
+            if (!(AssetImporter.GetAtPath(localTempPath) as AudioImporter)) {
                 EditorUtility.ClearProgressBar();
                 EditorUtility.DisplayDialog("Error",
                     $"Failed to set audio import settings for {localPath}", "ok");
@@ -277,6 +286,33 @@ namespace BefuddledLabs.OpenSyncDance
                 return;
             }
             
+            var ffmpegStartInfo = new ProcessStartInfo {
+                FileName = FFmpegPath,
+                Arguments = string.Format(
+                    ffmpegParams,
+                    tempSongPath+".wav",
+                    TimeSpanToYtdlpString(start),
+                    TimeSpanToYtdlpString(end - start),
+                    songPath+".wav"),
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            
+            var ffmpegProcess = Process.Start(ffmpegStartInfo);
+            if (ffmpegProcess == null) 
+            {
+                EditorUtility.ClearProgressBar();
+                EditorUtility.DisplayDialog("Error", "Couldn't Start ffmpeg to trim", "ok");
+                return;
+            }
+            ffmpegProcess.WaitForExit();
+            
+            if (File.Exists(tempSongPath+".wav"))
+                File.Delete(tempSongPath+".wav");
+            
+            AssetDatabase.Refresh();
+            
+            var importer = AssetImporter.GetAtPath(localPath) as AudioImporter;
             importer.loadInBackground = true;
             
             // Default settings for the downloaded audio file
