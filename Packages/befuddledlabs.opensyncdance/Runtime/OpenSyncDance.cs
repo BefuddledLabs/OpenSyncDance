@@ -663,7 +663,6 @@ namespace BefuddledLabs.OpenSyncDance
             readyState.TrackingTracks(AacAv3.Av3TrackingElement.LeftFingers);
             readyState.TrackingTracks(AacAv3.Av3TrackingElement.RightFingers);
 
-            danceState.PlayableEnables(VRC_PlayableLayerControl.BlendableLayer.Action);
             readyState.PlayableDisables(VRC_PlayableLayerControl.BlendableLayer.Action);
 
             // Transition to dance blend tree whenever an animation is triggered
@@ -672,10 +671,13 @@ namespace BefuddledLabs.OpenSyncDance
             danceState.TransitionsTo(readyState);
 
             var paramRecvBitsWrapped = new AacFlBoolGroupDecisionParameter(_paramRecvBits, _numberOfBits);
-            foreach (var (entryState, parent, param) in Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(danceState), paramRecvBitsWrapped))
+            foreach (var (waitState, parent, param) in Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(danceState), paramRecvBitsWrapped))
             {
+                var waitDoneState = parent.NewState("waitState");
+                var entryState = parent.NewState("entryState");
                 var loopState = parent.NewState("loopState");
                 var exitState = parent.NewState("exitState");
+
                 entryState.TransitionsTo(exitState).When(param.ExitCondition);
                 entryState.TransitionsTo(loopState).Automatically();
                 loopState.TransitionsTo(exitState).When(param.ExitCondition);
@@ -688,6 +690,13 @@ namespace BefuddledLabs.OpenSyncDance
 
                 var item = _animations[param.id - 1];
 
+                // HACK: For some reason VRChat's play audio state behaviour has a delay.
+                // We delay the action animation to match with the delayed audio.
+                waitState.TransitionsTo(waitDoneState).WithTransitionDurationSeconds(0.25f).When(_recvLayer.BoolParameter("false").IsFalse());
+                waitDoneState.TransitionsTo(entryState).Automatically();
+
+                entryState.PlayableEnables(VRC_PlayableLayerControl.BlendableLayer.Action);
+                
                 entryState.TrackingAnimates(AacAv3.Av3TrackingElement.Head);
                 entryState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftHand);
                 entryState.TrackingAnimates(AacAv3.Av3TrackingElement.RightHand);
