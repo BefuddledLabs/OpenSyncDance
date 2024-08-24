@@ -7,10 +7,10 @@
     "name": "BefuddledLabs"
   },
   "unity": "2022.3",
-  "description": "Tools for easier Avatar Creation",
+  "description": "Silly synchronized dances for all!",
   "vpmDependencies": {
     "com.vrchat.avatars": "^3.1.0",
-    "dev.hai-vr.animator-as-code.v1": "^1.1.0-beta",
-    "dev.hai-vr.animator-as-code.v1.vrchat": "^1.1.0-beta"
+    "dev.hai-vr.animator-as-code.v1": "^1.1.0",
+    "dev.hai-vr.animator-as-code.v1.vrchat": "^1.1.0"
   }
 }
