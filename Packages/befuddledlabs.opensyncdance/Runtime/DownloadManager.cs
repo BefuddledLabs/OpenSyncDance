@@ -79,6 +79,15 @@ namespace BefuddledLabs.OpenSyncDance
                     AssetDatabase.CreateFolder(prefixPath, assetFolderPath[i]);
             }
         }
+        
+        public static void ClearAudioFolder() 
+        {
+            if (!Directory.Exists(Application.dataPath + "/OpenSyncDance/Audio"))
+                return;
+            foreach (var file in Directory.GetFiles(Application.dataPath + "/OpenSyncDance/Audio"))
+                File.Delete(file);
+            AssetDatabase.Refresh();
+        }
 
         private static void FFmpegDownloadFinished(object sender, AsyncCompletedEventArgs e) 
         {

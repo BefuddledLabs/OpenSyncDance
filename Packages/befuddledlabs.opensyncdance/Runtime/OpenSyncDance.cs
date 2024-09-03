@@ -386,8 +386,9 @@ namespace BefuddledLabs.OpenSyncDance
                 EditorGUILayout.EndFoldoutHeaderGroup();
             }
             
-            if (DownloadManager.Hasytdlp && DownloadManager.HasFFmpeg) 
-            {
+            if (DownloadManager.Hasytdlp && DownloadManager.HasFFmpeg) {
+                if (GUILayout.Button("Clear Downloaded AudioClips"))
+                    DownloadManager.ClearAudioFolder();
                 if (GUILayout.Button("Download Missing AudioClips")) 
                 {
                     EditorGUI.BeginChangeCheck();
