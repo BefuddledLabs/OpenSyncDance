@@ -560,6 +560,19 @@ namespace BefuddledLabs.OpenSyncDance
             }
         }
 
+        internal void GenerateAll()
+        {
+            // TODO: create new animation controller if it doesn't exist
+            if (!animatorControllerFX)
+                throw new ArgumentNullException();
+            if (!animatorControllerAction)
+                throw new ArgumentNullException();
+
+            AnimatorSetup();
+            CreateMenu();
+            Generate();
+        }
+
         internal void Generate()
         {
             // Destroy children >:)
@@ -883,15 +896,7 @@ namespace BefuddledLabs.OpenSyncDance
 
             if (GUILayout.Button("Generate!"))
             {
-                // TODO: create new animation controller if it doesn't exist
-                if (!_self.animatorControllerFX)
-                    throw new ArgumentNullException();
-                if (!_self.animatorControllerAction)
-                    throw new ArgumentNullException();
-
-                _self.AnimatorSetup();
-                _self.CreateMenu();
-                _self.Generate();
+                _self.GenerateAll();
             }
 
             if (_self.vrcExpressionParameters)
