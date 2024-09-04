@@ -58,23 +58,31 @@ auto
 
 namespace BefuddledLabs.OpenSyncDance
 {
-    public static class GUIStyle {
+    public static class GUIStyle
+    {
         public static int LabelWidth = 50;
-        
-        public static UnityEngine.GUIStyle Light    = new() {normal = new GUIStyleState {textColor = new Color32(0xF6, 0xBA, 0xFB, 0xFF)}};
-        public static UnityEngine.GUIStyle Mid      = new() {normal = new GUIStyleState {textColor = new Color32(0xE2, 0x6C, 0xD7, 0xFF)}};
-        public static UnityEngine.GUIStyle Dark     = new() {normal = new GUIStyleState {textColor = new Color32(0x97, 0x29, 0xFC, 0xFF)}};
-        public static UnityEngine.GUIStyle Black    = new() {normal = new GUIStyleState {textColor = new Color32(0x11, 0x00, 0x2A, 0xFF)}};
+
+        public static UnityEngine.GUIStyle Light = new()
+            { normal = new GUIStyleState { textColor = new Color32(0xF6, 0xBA, 0xFB, 0xFF) } };
+
+        public static UnityEngine.GUIStyle Mid = new()
+            { normal = new GUIStyleState { textColor = new Color32(0xE2, 0x6C, 0xD7, 0xFF) } };
+
+        public static UnityEngine.GUIStyle Dark = new()
+            { normal = new GUIStyleState { textColor = new Color32(0x97, 0x29, 0xFC, 0xFF) } };
+
+        public static UnityEngine.GUIStyle Black = new()
+            { normal = new GUIStyleState { textColor = new Color32(0x11, 0x00, 0x2A, 0xFF) } };
     }
-    
+
     [Serializable]
-    public enum AudioType 
+    public enum AudioType
     {
         AudioFile,
         Youtube,
     }
 
-    
+
     [Serializable]
     public enum AudioSyncMethod
     {
@@ -82,9 +90,9 @@ namespace BefuddledLabs.OpenSyncDance
         ScaleAnimationToAudio,
         ClipAudioToAnimation,
     }
-    
+
     [Serializable]
-    public class AnimationAudio 
+    public class AnimationAudio
     {
         public AudioClip audioClip;
         public AudioType audioType;
@@ -99,7 +107,7 @@ namespace BefuddledLabs.OpenSyncDance
     [CustomPropertyDrawer(typeof(AnimationAudio))]
     public class AnimationAudioDrawer : PropertyDrawer
     {
-        ExtraGUI.GUIBuilderElement GetLayout(SerializedProperty property) 
+        ExtraGUI.GUIBuilderElement GetLayout(SerializedProperty property)
         {
             var ui = ExtraGUI.Builder(property)
                 .Draw(x => x
@@ -107,14 +115,15 @@ namespace BefuddledLabs.OpenSyncDance
                     .DrawEmpty()
                     .DrawField("audioType", "type", GUIStyle.Mid)
                     .DrawHorizontally());
-            if ((AudioType)property.FindPropertyRelative("audioType").boxedValue == AudioType.Youtube) {
+            if ((AudioType)property.FindPropertyRelative("audioType").boxedValue == AudioType.Youtube)
+            {
                 ui.Draw(x => x
                     .DrawField("audioUrl", "URL", GUIStyle.Dark)
                     .DrawField("startTimeStamp", "start", GUIStyle.Dark)
                     .DrawField("endTimeStamp", "end", GUIStyle.Dark)
                     .DrawHorizontally());
-
             }
+
             return ui.DrawVertically();
         }
 
@@ -122,7 +131,7 @@ namespace BefuddledLabs.OpenSyncDance
         {
             EditorGUI.BeginProperty(space, label, property);
             EditorGUIUtility.labelWidth = GUIStyle.LabelWidth;
-            
+
             GetLayout(property).Draw(space);
 
             EditorGUI.EndProperty();
@@ -133,10 +142,10 @@ namespace BefuddledLabs.OpenSyncDance
     }
 
     [Serializable]
-    public class SyncedAnimation 
+    public class SyncedAnimation
     {
         public bool expanded;
-        
+
         public AnimationClip animationClip;
         public bool animationUseFootIK;
         public AudioSyncMethod syncMethod;
@@ -186,7 +195,8 @@ namespace BefuddledLabs.OpenSyncDance
     [CustomPropertyDrawer(typeof(SyncedEmote))]
     public class SyncedEmoteDrawer : PropertyDrawer
     {
-        ExtraGUI.GUIBuilderElement GetLayout(SerializedProperty property) {
+        ExtraGUI.GUIBuilderElement GetLayout(SerializedProperty property)
+        {
             return ExtraGUI.Builder(property)
                 .Draw(x => x
                     .DrawField("name", "name", GUIStyle.Dark)
@@ -241,8 +251,7 @@ namespace BefuddledLabs.OpenSyncDance
         /// <summary>
         /// The VRC parameter asset that we will overwrite. If not set, will generate a new one.
         /// </summary>
-        [NonReorderable]
-        public VRCExpressionParameters vrcExpressionParameters;
+        [NonReorderable] public VRCExpressionParameters vrcExpressionParameters;
 
         /// <summary>
         /// The VRC menu assets that we will overwrite. If not set, will generate a new one.
@@ -257,18 +266,9 @@ namespace BefuddledLabs.OpenSyncDance
             animations ??= new();
             vrcExpressionMenus ??= new();
         }
-    }
 
-    [CustomEditor(typeof(OpenSyncDance))]
-    public class OpenSyncDanceEditor : Editor
-    {
-        // Warning: the variables here are not serialized and thus not persistent!
 
-        /// <summary>
-        /// Reference to the underlying open sync dance component that stores releveant data.
-        /// </summary>
-        private OpenSyncDance _self;
-
+        /// Generation code
         private AacFlBase _aac;
 
         /// <summary>
@@ -287,171 +287,45 @@ namespace BefuddledLabs.OpenSyncDance
         private AacFlLayer _bitLayer;
 
         /// <summary>
-        /// The animations that need to be syncable.
-        /// </summary>
-        private List<SyncedEmote> _animations => _self.animations;
-
-        private VRCExpressionParameters _vrcParams
-        {
-            get => _self.vrcExpressionParameters;
-            set => _self.vrcExpressionParameters = value;
-        }
-
-        private List<VRCExpressionsMenu> _vrcMenus
-        {
-            get => _self.vrcExpressionMenus;
-            set => _self.vrcExpressionMenus = value;
-        }
-
-        /// <summary>
         /// The number of bits that are used to sync with other players.
         /// </summary>
-        private int _numberOfBits => Utils.NumberOfBitsToRepresent(_animations.Count);
+        private int _numberOfBits => Utils.NumberOfBitsToRepresent(animations.Count);
 
         /// <summary>
         /// Parameter format of the contact bit receiver. This value needs to be formatted with <tt>string.Format</tt>.
         /// </summary>
-        private string _recvBitParamName => _contactPrefix + "OSD_RecvBit{0}";
+        private string _recvBitParamName => contactPrefix + "OSD_RecvBit{0}";
 
         /// <summary>
         /// Parameter name of the animation id that we want to broadcast.
         /// </summary>
         private string _sendAnimIdName = "OSD_SendAnim";
 
-        /// <summary>
-        /// Prefix string used for the contacts.
-        /// </summary>
-        private string _contactPrefix => _self.contactPrefix;
-
         // TODO: make this a variable that you can set from ui whatever idk??? lol --nara
         /// <summary>
         /// Component that gets plays the audio.
         /// </summary>
-        private AudioSource _audioSource => _self.GetComponentInChildren<AudioSource>();
+        private AudioSource _audioSource => GetComponentInChildren<AudioSource>();
 
         private List<VRCContactReceiver> _contactReceivers;
         private List<VRCContactSender> _contactSenders;
 
-        private AnimatorController _animationControllerFX => _self.animatorControllerFX;
+        private AnimatorController _animationControllerFX => animatorControllerFX;
         private AacFlBoolParameterGroup _paramRecvBits;
         private AacFlBoolParameterGroup _paramSendBits;
         private AacFlIntParameter _paramSendAnimId;
         private AacFlBoolParameterGroup _paramSendAnimIdBits;
 
-        bool _uiAdvancedFoldoutState = false;
-
         private const float _animDelay = 0.1f;
 
-        private void OnEnable()
-        {
-            _self = (OpenSyncDance)target;
-            if (string.IsNullOrWhiteSpace(_self.assetKey))
-                _self.assetKey = GUID.Generate().ToString();
-        }
-
-        public override void OnInspectorGUI()
-        {
-            // Make sure it's initialized, other wise we might check null variables!
-            _self.EnsureInitialized();
-            serializedObject.Update();
-
-            var contactPrefix_property = serializedObject.FindProperty("contactPrefix");
-            EditorGUILayout.PropertyField(contactPrefix_property, true);
-
-            var assetContainer_property = serializedObject.FindProperty("animatorControllerAction");
-            EditorGUILayout.PropertyField(assetContainer_property, true);
-
-            assetContainer_property = serializedObject.FindProperty("animatorControllerFX");
-            EditorGUILayout.PropertyField(assetContainer_property, true);
-
-            var emote_property = serializedObject.FindProperty("animations");
-            EditorGUILayout.PropertyField(emote_property, true);
-
-            // Advanced settings for smarty pants. You probably don't need this.
-            if (_uiAdvancedFoldoutState = EditorGUILayout.BeginFoldoutHeaderGroup(_uiAdvancedFoldoutState, "Advanced"))
-            {
-                var guidPoperty = serializedObject.FindProperty("assetKey");
-                EditorGUILayout.PropertyField(guidPoperty, true);
-
-                var vrcParamsProperty = serializedObject.FindProperty("vrcExpressionParameters");
-                EditorGUILayout.PropertyField(vrcParamsProperty, true);
-
-                EditorGUILayout.EndFoldoutHeaderGroup();
-
-                var vrcMenuProperty = serializedObject.FindProperty("vrcExpressionMenus");
-                EditorGUILayout.PropertyField(vrcMenuProperty, true);
-            }
-            else
-            {
-                EditorGUILayout.EndFoldoutHeaderGroup();
-            }
-            
-            if (DownloadManager.Hasytdlp && DownloadManager.HasFFmpeg) {
-                if (GUILayout.Button("Clear Downloaded AudioClips"))
-                    DownloadManager.ClearAudioFolder();
-                if (GUILayout.Button("Download Missing AudioClips")) 
-                {
-                    EditorGUI.BeginChangeCheck();
-                    for (var index = 0; index < emote_property.arraySize; index++) {
-                        var syncedEmote = emote_property.GetArrayElementAtIndex(index);
-                        var anims = new[] {
-                            syncedEmote.FindPropertyRelative("entry"),
-                            syncedEmote.FindPropertyRelative("loop"),
-                            syncedEmote.FindPropertyRelative("exit"),
-                        };
-
-                        foreach (var anim in anims) {
-                            var animObject = (SyncedAnimation)anim.boxedValue;
-                            if (animObject.audio.audioType != AudioType.Youtube)
-                                continue;
-                            if (animObject.audio.audioClip)
-                                continue;
-                            if (!animObject.animationClip)
-                                continue;
-
-                            anim.FindPropertyRelative("audio").FindPropertyRelative("audioClip").boxedValue = DownloadManager.DownloadYouTubeLink(animObject);
-                        }
-                    }
-
-                    if (EditorGUI.EndChangeCheck())
-                        EditorUtility.SetDirty(_self);
-                }
-            }
-            else 
-            {
-                if (GUILayout.Button("Click to download yt-dlp/ffmpeg to use the YouTube audio type.")) 
-                    DownloadManager.DownloadBoth();
-            }
-
-            serializedObject.ApplyModifiedProperties();
-            
-            if (GUILayout.Button("Generate!"))
-            {
-                // TODO: create new animation controller if it doesn't exist
-                if (!_animationControllerFX)
-                    throw new ArgumentNullException();
-                if (!_self.animatorControllerAction)
-                    throw new ArgumentNullException();
-
-                AnimatorSetup();
-                CreateMenu();
-                Generate();
-            }
-
-            if (_self.vrcExpressionParameters)
-                EditorGUILayout.HelpBox("Expression parameter is set, this will be overwritten which may remove any previous set parameters!", MessageType.Info);
-            if (_self.vrcExpressionMenus == null || _self.vrcExpressionMenus.Count > 0)
-                EditorGUILayout.HelpBox("Expression menus are set, this will be overwritten which may remove any previous set parameters!", MessageType.Info);
-        }
-
-        private void AnimatorSetup()
+        internal void AnimatorSetup()
         {
             _aac = AacV1.Create(new AacConfiguration
             {
                 SystemName = "OpenSyncDance",
-                AnimatorRoot = _self.transform,
-                DefaultValueRoot = _self.transform,
-                AssetKey = _self.assetKey,
+                AnimatorRoot = transform,
+                DefaultValueRoot = transform,
+                AssetKey = assetKey,
                 AssetContainer = _animationControllerFX,
                 ContainerMode = AacConfiguration.Container.Everything,
                 DefaultsProvider = new AacDefaultsProvider(true),
@@ -459,7 +333,7 @@ namespace BefuddledLabs.OpenSyncDance
 
             _aac.ClearPreviousAssets();
 
-            _recvLayer = _aac.CreateSupportingArbitraryControllerLayer(_self.animatorControllerAction, "recvLayer");
+            _recvLayer = _aac.CreateSupportingArbitraryControllerLayer(animatorControllerAction, "recvLayer");
             _sendLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationControllerFX, "sendLayer");
             _bitLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationControllerFX, "BitConverter");
 
@@ -471,8 +345,10 @@ namespace BefuddledLabs.OpenSyncDance
                 receiveParamNames.Add(string.Format(_recvBitParamName, i));
                 paramSendAnimIdBitsNames.Add($"paramSendAnimIdBits_{i}");
             }
+
             _paramRecvBits = _recvLayer.BoolParameters(receiveParamNames.ToArray());
-            _sendLayer.BoolParameters(receiveParamNames.ToArray()); // Ugly thing to get the same params on the Action animator
+            _sendLayer.BoolParameters(receiveParamNames
+                .ToArray()); // Ugly thing to get the same params on the Action animator
             _paramSendAnimIdBits = _bitLayer.BoolParameters(paramSendAnimIdBitsNames.ToArray());
 
             _paramSendAnimId = _sendLayer.IntParameter(_sendAnimIdName);
@@ -490,8 +366,8 @@ namespace BefuddledLabs.OpenSyncDance
             localEncode.TransitionsTo(localEncode);
 
             foreach (var (state, _, param) in Utils.CreateBinarySearchTree(
-                new AacFlStateMachineWrapped(localEncode),
-                new AacFlIntDecisionParameter(_paramSendAnimId, _numberOfBits)))
+                         new AacFlStateMachineWrapped(localEncode),
+                         new AacFlIntDecisionParameter(_paramSendAnimId, _numberOfBits)))
             {
                 state.State.name = $"Send {param.id}";
                 state.Exits().Automatically();
@@ -505,8 +381,8 @@ namespace BefuddledLabs.OpenSyncDance
             remoteDecode.TransitionsTo(remoteDecode);
 
             foreach (var (state, _, param) in Utils.CreateBinarySearchTree(
-                new AacFlStateMachineWrapped(remoteDecode),
-                new AacFlBoolGroupDecisionParameter(_paramSendAnimIdBits, _numberOfBits)))
+                         new AacFlStateMachineWrapped(remoteDecode),
+                         new AacFlBoolGroupDecisionParameter(_paramSendAnimIdBits, _numberOfBits)))
             {
                 state.State.name = $"Receive {param.id}";
                 state.Drives(_paramSendAnimId, param.id);
@@ -514,7 +390,7 @@ namespace BefuddledLabs.OpenSyncDance
             }
         }
 
-        private void SetCommonAudioSettings(AacVRCFlEditAnimatorPlayAudio audio) 
+        private void SetCommonAudioSettings(AacVRCFlEditAnimatorPlayAudio audio)
         {
             audio.PlayAudio.PlayOnEnter = true;
             audio.PlayAudio.StopOnExit = true;
@@ -530,13 +406,13 @@ namespace BefuddledLabs.OpenSyncDance
             lockState.TransitionsTo(readyState).When(_paramRecvBits.AreFalse());
             exitState.Exits().Automatically().WithTransitionDurationSeconds(0.2f);
 
-            for (int i = 1; i < _animations.Count + 1; i++)
+            for (int i = 1; i < animations.Count + 1; i++)
             {
-                var currentSyncedAnimation = _animations[i - 1];
+                var currentSyncedAnimation = animations[i - 1];
                 var danceState = _sendLayer.NewState($"Dance {currentSyncedAnimation.name}");
-                
+
                 var enabled = _sendLayer.BoolParameter("OSD_Enabled");
-                
+
                 var entryMusicState = _sendLayer.NewState($"Entry Music {currentSyncedAnimation.name}");
                 var loopMusicState = _sendLayer.NewState($"Loop Music {currentSyncedAnimation.name}");
                 var exitMusicState = _sendLayer.NewState($"Exit Music {currentSyncedAnimation.name}");
@@ -545,34 +421,36 @@ namespace BefuddledLabs.OpenSyncDance
                 if (currentSyncedAnimation.entry.audio.audioClip)
                 {
                     entryMusicState.Audio(_audioSource, (a) =>
-                        {
-                            SetCommonAudioSettings(a);
-                            a.StartsPlayingOnEnterAfterSeconds(_animDelay);
-                            a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
-                                new[] { currentSyncedAnimation.entry.audio.audioClip });
-                            a.SetsVolume(0);
-                        });
+                    {
+                        SetCommonAudioSettings(a);
+                        a.StartsPlayingOnEnterAfterSeconds(_animDelay);
+                        a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
+                            new[] { currentSyncedAnimation.entry.audio.audioClip });
+                        a.SetsVolume(0);
+                    });
                 }
+
                 if (currentSyncedAnimation.loop.audio.audioClip)
                 {
                     loopMusicState.Audio(_audioSource, (a) =>
-                        {
-                            SetCommonAudioSettings(a);
-                            a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
-                                new[] { currentSyncedAnimation.loop.audio.audioClip });
-                            a.SetsLooping();
-                            a.SetsVolume(currentSyncedAnimation.loop.audio.volume);
-                        });
+                    {
+                        SetCommonAudioSettings(a);
+                        a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
+                            new[] { currentSyncedAnimation.loop.audio.audioClip });
+                        a.SetsLooping();
+                        a.SetsVolume(currentSyncedAnimation.loop.audio.volume);
+                    });
                 }
+
                 if (currentSyncedAnimation.exit.audio.audioClip)
                 {
                     exitMusicState.Audio(_audioSource, (a) =>
-                        {
-                            SetCommonAudioSettings(a);
-                            a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
-                                new[] { currentSyncedAnimation.exit.audio.audioClip });
-                            a.SetsVolume(currentSyncedAnimation.loop.audio.volume);
-                        });
+                    {
+                        SetCommonAudioSettings(a);
+                        a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
+                            new[] { currentSyncedAnimation.exit.audio.audioClip });
+                        a.SetsVolume(currentSyncedAnimation.loop.audio.volume);
+                    });
                 }
 
                 readyState.TransitionsTo(danceState).When(_paramSendAnimId.IsEqualTo(i)).And(enabled.IsTrue());
@@ -580,7 +458,7 @@ namespace BefuddledLabs.OpenSyncDance
 
                 var recvParamNames = _paramRecvBits.ToList();
 
-                void ToggleBits(AacFlEditClip a) 
+                void ToggleBits(AacFlEditClip a)
                 {
                     for (int j = 0; j < recvParamNames.Count; j++)
                     {
@@ -593,14 +471,17 @@ namespace BefuddledLabs.OpenSyncDance
                 var toggleClip = _aac.NewClip().Animating(ToggleBits);
 
                 danceState.WithAnimation(toggleClip);
-                entryMusicState.WithAnimation(_aac.NewClip().Animating(a => {
+                entryMusicState.WithAnimation(_aac.NewClip().Animating(a =>
+                {
                     ToggleBits(a);
                     var volume = a.Animates(_audioSource, "m_Volume");
-                    volume.WithUnit(AacFlUnit.Seconds, (AacFlSettingKeyframes key) => {
+                    volume.WithUnit(AacFlUnit.Seconds, (AacFlSettingKeyframes key) =>
+                    {
                         key.Linear(0.0f, 0.0f);
                         key.Linear(0.2f, currentSyncedAnimation.entry.audio.volume);
                         if (currentSyncedAnimation.entry.animationClip)
-                            key.Linear(currentSyncedAnimation.entry.animationClip.length, currentSyncedAnimation.entry.audio.volume);
+                            key.Linear(currentSyncedAnimation.entry.animationClip.length,
+                                currentSyncedAnimation.entry.audio.volume);
                     });
                 }));
                 loopMusicState.WithAnimation(toggleClip);
@@ -631,7 +512,8 @@ namespace BefuddledLabs.OpenSyncDance
             inBetween.WithAnimation(_aac.NewClip().Toggling(_audioSource.gameObject, true));
             off.WithAnimation(_aac.NewClip().Toggling(_audioSource.gameObject, false));
 
-            inBetween.Audio(_audioSource, a => {
+            inBetween.Audio(_audioSource, a =>
+            {
                 a.StopsPlayingOnEnter();
                 a.StopsPlayingOnExit();
             });
@@ -648,7 +530,7 @@ namespace BefuddledLabs.OpenSyncDance
             var readyState = _recvLayer.NewState("Ready");
             var lockState = _recvLayer.NewState("Lock");
             var danceState = _recvLayer.NewSubStateMachine("Dance");
-            
+
             var enabled = _recvLayer.BoolParameter("OSD_Enabled");
 
             readyState.TransitionsTo(lockState).When(enabled.IsFalse());
@@ -672,7 +554,8 @@ namespace BefuddledLabs.OpenSyncDance
             danceState.TransitionsTo(readyState);
 
             var paramRecvBitsWrapped = new AacFlBoolGroupDecisionParameter(_paramRecvBits, _numberOfBits);
-            foreach (var (waitState, parent, param) in Utils.CreateBinarySearchTree(new AacFlStateMachineWrapped(danceState), paramRecvBitsWrapped))
+            foreach (var (waitState, parent, param) in Utils.CreateBinarySearchTree(
+                         new AacFlStateMachineWrapped(danceState), paramRecvBitsWrapped))
             {
                 var waitDoneState = parent.NewState("waitState");
                 var entryState = parent.NewState("entryState");
@@ -686,18 +569,19 @@ namespace BefuddledLabs.OpenSyncDance
 
                 if (param.id == 0)
                     continue;
-                if (param.id > _animations.Count)
+                if (param.id > animations.Count)
                     break;
 
-                var item = _animations[param.id - 1];
+                var item = animations[param.id - 1];
 
                 // HACK: For some reason VRChat's play audio state behaviour has a delay.
                 // We delay the action animation to match with the delayed audio.
-                waitState.TransitionsTo(waitDoneState).WithTransitionDurationSeconds(0.25f).When(_recvLayer.BoolParameter("false").IsFalse());
+                waitState.TransitionsTo(waitDoneState).WithTransitionDurationSeconds(0.25f)
+                    .When(_recvLayer.BoolParameter("false").IsFalse());
                 waitDoneState.TransitionsTo(entryState).Automatically();
 
                 entryState.PlayableEnables(VRC_PlayableLayerControl.BlendableLayer.Action);
-                
+
                 entryState.TrackingAnimates(AacAv3.Av3TrackingElement.Head);
                 entryState.TrackingAnimates(AacAv3.Av3TrackingElement.LeftHand);
                 entryState.TrackingAnimates(AacAv3.Av3TrackingElement.RightHand);
@@ -720,19 +604,20 @@ namespace BefuddledLabs.OpenSyncDance
             }
         }
 
-        private void Generate()
+        internal void Generate()
         {
             // Destroy children >:)
             // TODO: add method to keep certain objects for e.g. props that may be used
-            var contactContainer = _self.transform.Find("OSD_Contacts")?.gameObject;
-            while (contactContainer) {
+            var contactContainer = transform.Find("OSD_Contacts")?.gameObject;
+            while (contactContainer)
+            {
                 DestroyImmediate(contactContainer);
-                contactContainer = _self.transform.Find("OSD_Contacts")?.gameObject;
+                contactContainer = transform.Find("OSD_Contacts")?.gameObject;
             }
 
             // Create contacts root object to hold
             contactContainer = new GameObject("OSD_Contacts");
-            contactContainer.transform.parent = _self.transform;
+            contactContainer.transform.parent = transform;
 
             _contactReceivers = new List<VRCContactReceiver>();
             _contactSenders = new List<VRCContactSender>();
@@ -781,21 +666,21 @@ namespace BefuddledLabs.OpenSyncDance
             if (asset)
                 return asset;
 
-            asset = CreateInstance<T>();
+            asset = (T)ScriptableObject.CreateInstance(typeof(T));
             AssetDatabase.CreateAsset(asset, path);
 
             return asset;
         }
 
-        private void CreateMenu()
+        internal void CreateMenu()
         {
             const int animsPerPage = 7;
             // The last page can contain one more than the usual anims per page, so subtract
             // one from the total. Then use 'divisor minus 1'-trick for a ceiling div.
-            int numPages = (_animations.Count + animsPerPage - 2 + 2) / animsPerPage;
+            int numPages = (animations.Count + animsPerPage - 2 + 2) / animsPerPage;
 
             // Create a path of folders
-            List<string> assetFolderPath = new() { "Assets", "OpenSyncDance", _self.assetKey };
+            List<string> assetFolderPath = new() { "Assets", "OpenSyncDance", assetKey };
             for (int i = 1; i < assetFolderPath.Count; i++)
             {
                 // We don't have to create the assets folder, so  we start at i = 1. Then for every
@@ -804,15 +689,18 @@ namespace BefuddledLabs.OpenSyncDance
                 if (!AssetDatabase.IsValidFolder($"{prefixPath}/{assetFolderPath[i]}"))
                     AssetDatabase.CreateFolder(prefixPath, assetFolderPath[i]);
             }
+
             var assetFolder = string.Join('/', assetFolderPath);
 
             // Create VRC params asset
-            if (!_vrcParams)
-                _vrcParams = CreateOrLoadAsset<VRCExpressionParameters>($"{assetFolder}/OSD_Params.asset");
+            if (!vrcExpressionParameters)
+                vrcExpressionParameters = CreateOrLoadAsset<VRCExpressionParameters>($"{assetFolder}/OSD_Params.asset");
 
             //vrcParams.parameters 
-            var tempParams = new List<VRCExpressionParameters.Parameter> {
-                new() {
+            var tempParams = new List<VRCExpressionParameters.Parameter>
+            {
+                new()
+                {
                     name = _paramSendAnimId.Name,
                     valueType = VRCExpressionParameters.ValueType.Int,
                     saved = false,
@@ -832,16 +720,18 @@ namespace BefuddledLabs.OpenSyncDance
                     defaultValue = 0,
                 });
             }
-            
-            tempParams.Add(new () {
+
+            tempParams.Add(new()
+            {
                 name = $"OSD_Enabled",
                 valueType = VRCExpressionParameters.ValueType.Bool,
                 saved = true,
                 networkSynced = true,
                 defaultValue = 1,
             });
-            
-            tempParams.Add(new () {
+
+            tempParams.Add(new()
+            {
                 name = $"OSD_Sound",
                 valueType = VRCExpressionParameters.ValueType.Bool,
                 saved = true,
@@ -849,53 +739,55 @@ namespace BefuddledLabs.OpenSyncDance
                 defaultValue = 1,
             });
 
-            _vrcParams.parameters = tempParams.ToArray();
+            vrcExpressionParameters.parameters = tempParams.ToArray();
 
             // Ensure we have enough menus
             for (int pageId = 0; pageId < numPages; pageId++)
             {
-                if (_vrcMenus.Count <= pageId)
-                    _vrcMenus.Add(null);
-                if (!_vrcMenus[pageId])
-                    _vrcMenus[pageId] = CreateOrLoadAsset<VRCExpressionsMenu>($"{assetFolder}/OSD_Menu_{pageId}.asset");
-                
+                if (vrcExpressionMenus.Count <= pageId)
+                    vrcExpressionMenus.Add(null);
+                if (!vrcExpressionMenus[pageId])
+                    vrcExpressionMenus[pageId] =
+                        CreateOrLoadAsset<VRCExpressionsMenu>($"{assetFolder}/OSD_Menu_{pageId}.asset");
+
                 // Clear menu!
-                _vrcMenus[pageId].controls = new();
+                vrcExpressionMenus[pageId].controls = new();
             }
 
             for (int pageId = 0; pageId < numPages - 1; pageId++)
             {
-                _vrcMenus[pageId].controls.Add(new VRCExpressionsMenu.Control {
+                vrcExpressionMenus[pageId].controls.Add(new VRCExpressionsMenu.Control
+                {
                     icon = null,
                     name = $"Page {pageId + 1}",
                     type = VRCExpressionsMenu.Control.ControlType.SubMenu,
-                    subMenu = _vrcMenus[pageId + 1],
+                    subMenu = vrcExpressionMenus[pageId + 1],
                 });
             }
-            
+
             // Enable Toggle
-            _vrcMenus[0].controls.Add(new VRCExpressionsMenu.Control
-                        {
-                            name = "Enabled",
-                            parameter = new VRCExpressionsMenu.Control.Parameter()
-                            {
-                                name = "OSD_Enabled",
-                            },
-                            type = VRCExpressionsMenu.Control.ControlType.Toggle,
-                            value = 1,
-                        });
-            
+            vrcExpressionMenus[0].controls.Add(new VRCExpressionsMenu.Control
+            {
+                name = "Enabled",
+                parameter = new VRCExpressionsMenu.Control.Parameter()
+                {
+                    name = "OSD_Enabled",
+                },
+                type = VRCExpressionsMenu.Control.ControlType.Toggle,
+                value = 1,
+            });
+
             // Enable Sound
-            _vrcMenus[0].controls.Add(new VRCExpressionsMenu.Control
-                        {
-                            name = "Sound",
-                            parameter = new VRCExpressionsMenu.Control.Parameter()
-                            {
-                                name = "OSD_Sound",
-                            },
-                            type = VRCExpressionsMenu.Control.ControlType.Toggle,
-                            value = 1,
-                        });
+            vrcExpressionMenus[0].controls.Add(new VRCExpressionsMenu.Control
+            {
+                name = "Sound",
+                parameter = new VRCExpressionsMenu.Control.Parameter()
+                {
+                    name = "OSD_Sound",
+                },
+                type = VRCExpressionsMenu.Control.ControlType.Toggle,
+                value = 1,
+            });
 
             // Setup menus
             var totalAnims = 0;
@@ -907,26 +799,153 @@ namespace BefuddledLabs.OpenSyncDance
 
                 // Skip animations that we already put in pages, then take enough to fill the page.
                 // Map the taken items to a VRC menu button.
-                _vrcMenus[pageId].controls.AddRange(_animations.Skip(totalAnims).Take(animsOnThisPage).Select((SyncedEmote anim) =>
-                {
-                    animationId++;
-                    return new VRCExpressionsMenu.Control
+                vrcExpressionMenus[pageId].controls.AddRange(animations.Skip(totalAnims).Take(animsOnThisPage).Select(
+                    (SyncedEmote anim) =>
                     {
-                        icon = anim.icon,
-                        name = anim.name,
-                        parameter = new VRCExpressionsMenu.Control.Parameter()
+                        animationId++;
+                        return new VRCExpressionsMenu.Control
                         {
-                            name = _paramSendAnimId.Name,
-                        },
-                        type = VRCExpressionsMenu.Control.ControlType.Toggle,
-                        value = animationId,
-                    };
-                }));
+                            icon = anim.icon,
+                            name = anim.name,
+                            parameter = new VRCExpressionsMenu.Control.Parameter()
+                            {
+                                name = _paramSendAnimId.Name,
+                            },
+                            type = VRCExpressionsMenu.Control.ControlType.Toggle,
+                            value = animationId,
+                        };
+                    }));
 
                 totalAnims += animsOnThisPage;
             }
 
             AssetDatabase.SaveAssets();
+        }
+    }
+
+    [CustomEditor(typeof(OpenSyncDance))]
+    public class OpenSyncDanceEditor : Editor
+    {
+        // Warning: the variables here are not serialized and thus not persistent!
+
+        /// <summary>
+        /// Reference to the underlying open sync dance component that stores releveant data.
+        /// </summary>
+        private OpenSyncDance _self;
+
+        bool _uiAdvancedFoldoutState = false;
+
+
+        private void OnEnable()
+        {
+            _self = (OpenSyncDance)target;
+            if (string.IsNullOrWhiteSpace(_self.assetKey))
+                _self.assetKey = GUID.Generate().ToString();
+        }
+
+        public override void OnInspectorGUI()
+        {
+            // Make sure it's initialized, other wise we might check null variables!
+            _self.EnsureInitialized();
+            serializedObject.Update();
+
+            var contactPrefix_property = serializedObject.FindProperty("contactPrefix");
+            EditorGUILayout.PropertyField(contactPrefix_property, true);
+
+            var assetContainer_property = serializedObject.FindProperty("animatorControllerAction");
+            EditorGUILayout.PropertyField(assetContainer_property, true);
+
+            assetContainer_property = serializedObject.FindProperty("animatorControllerFX");
+            EditorGUILayout.PropertyField(assetContainer_property, true);
+
+            var emote_property = serializedObject.FindProperty("animations");
+            EditorGUILayout.PropertyField(emote_property, true);
+
+            // Advanced settings for smarty pants. You probably don't need this.
+            if (_uiAdvancedFoldoutState =
+                EditorGUILayout.BeginFoldoutHeaderGroup(_uiAdvancedFoldoutState, "Advanced"))
+            {
+                var guidPoperty = serializedObject.FindProperty("assetKey");
+                EditorGUILayout.PropertyField(guidPoperty, true);
+
+                var vrcParamsProperty = serializedObject.FindProperty("vrcExpressionParameters");
+                EditorGUILayout.PropertyField(vrcParamsProperty, true);
+
+                EditorGUILayout.EndFoldoutHeaderGroup();
+
+                var vrcMenuProperty = serializedObject.FindProperty("vrcExpressionMenus");
+                EditorGUILayout.PropertyField(vrcMenuProperty, true);
+            }
+            else
+            {
+                EditorGUILayout.EndFoldoutHeaderGroup();
+            }
+
+            if (DownloadManager.Hasytdlp && DownloadManager.HasFFmpeg)
+            {
+                if (GUILayout.Button("Clear Downloaded AudioClips"))
+                    DownloadManager.ClearAudioFolder();
+                if (GUILayout.Button("Download Missing AudioClips"))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    for (var index = 0; index < emote_property.arraySize; index++)
+                    {
+                        var syncedEmote = emote_property.GetArrayElementAtIndex(index);
+                        var anims = new[]
+                        {
+                            syncedEmote.FindPropertyRelative("entry"),
+                            syncedEmote.FindPropertyRelative("loop"),
+                            syncedEmote.FindPropertyRelative("exit"),
+                        };
+
+                        foreach (var anim in anims)
+                        {
+                            var animObject = (SyncedAnimation)anim.boxedValue;
+                            if (animObject.audio.audioType != AudioType.Youtube)
+                                continue;
+                            if (animObject.audio.audioClip)
+                                continue;
+                            if (!animObject.animationClip)
+                                continue;
+
+                            anim.FindPropertyRelative("audio").FindPropertyRelative("audioClip").boxedValue =
+                                DownloadManager.DownloadYouTubeLink(animObject);
+                        }
+                    }
+
+                    if (EditorGUI.EndChangeCheck())
+                        EditorUtility.SetDirty(_self);
+                }
+            }
+            else
+            {
+                if (GUILayout.Button("Click to download yt-dlp/ffmpeg to use the YouTube audio type."))
+                    DownloadManager.DownloadBoth();
+            }
+
+            serializedObject.ApplyModifiedProperties();
+
+            if (GUILayout.Button("Generate!"))
+            {
+                // TODO: create new animation controller if it doesn't exist
+                if (!_self.animatorControllerFX)
+                    throw new ArgumentNullException();
+                if (!_self.animatorControllerAction)
+                    throw new ArgumentNullException();
+
+                _self.AnimatorSetup();
+                _self.CreateMenu();
+                _self.Generate();
+            }
+
+            if (_self.vrcExpressionParameters)
+                EditorGUILayout.HelpBox(
+                    "Expression parameter is set, this will be overwritten which may remove any previous set parameters!",
+                    MessageType.Info);
+            if (_self.vrcExpressionMenus == null || _self.vrcExpressionMenus.Count > 0)
+                EditorGUILayout.HelpBox(
+                    "Expression menus are set, this will be overwritten which may remove any previous set parameters!",
+                    MessageType.Info);
         }
     }
 }
