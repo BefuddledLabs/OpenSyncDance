@@ -12,50 +12,6 @@ using VRC.SDK3.Avatars.ScriptableObjects;
 using VRC.SDK3.Dynamics.Contact.Components;
 using VRC.SDKBase;
 
-/*
-
-Pokedance
-https://www.youtube.com/watch?v=vikINVCvqCE
-8.055
-auto
-
-Helltaker
-https://www.youtube.com/watch?v=EnDXGQmCz3U
-44.867
-51.267
-
-Ankha
-https://www.youtube.com/watch?v=AFoWM83g-KY
-8.743
-34.875
-
-Arona
-https://www.youtube.com/watch?v=3Zo_1S-iVoA
-0.460
-auto
-
-SAR
-https://www.youtube.com/watch?v=oNxRqHovkBI
-0.07
-10.442
-
-Badger Badger
-https://www.youtube.com/watch?v=EIyixC9NsLI
-0.55
-30.55
-
-Zufolo Impazzito
-https://www.youtube.com/watch?v=STOKzUsSUPY
-0.2
-28.7
-
-Distraction
-https://www.youtube.com/watch?v=ZhFVt5uPdW0
-5.761
-auto
-
-*/
-
 namespace BefuddledLabs.OpenSyncDance
 {
     public static class GUIStyle
