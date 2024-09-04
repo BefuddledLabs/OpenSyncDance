@@ -16,19 +16,28 @@ namespace BefuddledLabs.OpenSyncDance
 {
     public static class GUIStyle
     {
+        public static bool IsGay;
+        public static float GaySpeed = 0.25f;
+        
         public static int LabelWidth = 50;
 
-        public static UnityEngine.GUIStyle Light = new()
-            { normal = new GUIStyleState { textColor = new Color32(0xF6, 0xBA, 0xFB, 0xFF) } };
+        private static Color32 GetGayColor(float offset)
+        {
+            var time = (float)EditorApplication.timeSinceStartup * GaySpeed + offset;
+            return Color.HSVToRGB(time - Mathf.Floor(time), 0.5f, 1f);
+        }
 
-        public static UnityEngine.GUIStyle Mid = new()
-            { normal = new GUIStyleState { textColor = new Color32(0xE2, 0x6C, 0xD7, 0xFF) } };
+        public static UnityEngine.GUIStyle Light => new()
+            { normal = new GUIStyleState { textColor = IsGay ? GetGayColor(0f) : new Color32(0xF6, 0xBA, 0xFB, 0xFF) } };
 
-        public static UnityEngine.GUIStyle Dark = new()
-            { normal = new GUIStyleState { textColor = new Color32(0x97, 0x29, 0xFC, 0xFF) } };
+        public static UnityEngine.GUIStyle Mid => new()
+            { normal = new GUIStyleState { textColor = IsGay ? GetGayColor(0.2f) : new Color32(0xE2, 0x6C, 0xD7, 0xFF) } };
 
-        public static UnityEngine.GUIStyle Black = new()
-            { normal = new GUIStyleState { textColor = new Color32(0x11, 0x00, 0x2A, 0xFF) } };
+        public static UnityEngine.GUIStyle Dark => new()
+            { normal = new GUIStyleState { textColor = IsGay ? GetGayColor(0.4f) : new Color32(0x97, 0x29, 0xFC, 0xFF) } };
+
+        public static UnityEngine.GUIStyle Black => new()
+            { normal = new GUIStyleState { textColor = IsGay ? GetGayColor(0.6f) : new Color32(0x11, 0x00, 0x2A, 0xFF) } };
     }
 
     [Serializable]
@@ -801,6 +810,11 @@ namespace BefuddledLabs.OpenSyncDance
         /// Reference to the underlying open sync dance component that stores releveant data.
         /// </summary>
         private OpenSyncDance _self;
+        
+        /// <summary>
+        /// The menu is now gay
+        /// </summary>
+        public static bool IsGay;
 
         bool _uiAdvancedFoldoutState = false;
 
@@ -834,6 +848,8 @@ namespace BefuddledLabs.OpenSyncDance
             if (_uiAdvancedFoldoutState =
                 EditorGUILayout.BeginFoldoutHeaderGroup(_uiAdvancedFoldoutState, "Advanced"))
             {
+                GUIStyle.IsGay = EditorGUILayout.Toggle("colorful menu", GUIStyle.IsGay);
+                
                 var guidPoperty = serializedObject.FindProperty("assetKey");
                 EditorGUILayout.PropertyField(guidPoperty, true);
 
