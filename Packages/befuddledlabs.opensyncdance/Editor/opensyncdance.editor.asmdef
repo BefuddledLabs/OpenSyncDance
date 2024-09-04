@@ -1,0 +1,22 @@
+{
+    "name": "befuddledlabs.opensyncdance.editor",
+    "rootNamespace": "BefuddledLabs.OpenSyncDance.Editor",
+    "references": [
+        "GUID:0716d6b1db7647d41837fb5428fb2531",
+        "GUID:21332e1f0d937794d916d2402ba1943a",
+        "GUID:6e9c6119ac4eb334284fb7b4bc6d1f05",
+        "GUID:3456780c4fb2d324ab9c633d6f1b0ddb",
+        "GUID:b906909fcc54f634db50f2cad0f988d9"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

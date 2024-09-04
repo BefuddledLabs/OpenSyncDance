@@ -10,16 +10,20 @@ Open Sync Dance is a utility and Unity prefab to have player-synchronized dances
 - [Haï's Animator As Code](https://github.com/hai-vr/av3-animator-as-code)
 - [Haï's Animator As Code - VRChat](https://github.com/hai-vr/animator-as-code-vrchat), version `1.1.0` or higher
 - [VRCFury (optional)](https://vrcfury.com/)
+- [Modular Avatar (optional)](https://modular-avatar.nadena.dev/docs/intro)
 
 ## How to use
 
 1. Get the above dependencies.
 2. Add the Open Sync Dance package to VCC via the listing at [`befuddledlabs.github.io/OpenSyncDance`](https://befuddledlabs.github.io/OpenSyncDance/).
-3. Drag and drop the `OpenSyncDance` prefab from `Packages/Open Sync Dance/Samples` onto a VRChat avatar.
+3. Drag and drop one of the `OpenSyncDance` prefab from `Packages/Open Sync Dance/Samples/Prefabs` onto a VRChat avatar.
+   * Either `OpenSyncDance - Manual`, `OpenSyncDance - VRCFury`, or `OpenSyncDance - Modular Avatar` depending on your needs. 
 4. On the prefab, download the missing audio clips. This will download from the supplied URLs and cut them to length. You can configure other things here too, like selecting animations and swapping songs.
-5. **Click the Generate button!**
-6. If you have VRCFury, the avatar will be ready to upload. If not, please merge the animators, parameters and menu 0 with your current avatar.
-7. Upload & dance! 💃💃
+5. If you have VRCFury or Modular Avatar, the avatar will be ready to upload.
+   * If not 
+     * You'll need to press the `Generate` button on the prefab.
+     * After you can merge the animators, parameters and menu 0 with your current avatar.
+6. Upload & dance! 💃💃
 
 ## Included Dances
 

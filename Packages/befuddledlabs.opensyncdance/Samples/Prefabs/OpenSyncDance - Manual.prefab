@@ -69,7 +69,7 @@ GameObject:
   - component: {fileID: 6723757787389794189}
   - component: {fileID: 4458236332111147532}
   m_Layer: 0
-  m_Name: OpenSyncDance
+  m_Name: OpenSyncDance - Manual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -106,8 +106,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   assetKey: 243173d11d2037343a2eb744e38419cb
   contactPrefix: OSDDefault_
-  animatorControllerFX: {fileID: 9100000, guid: d1d2af1497ed69f4ba71949c41f0d707, type: 2}
-  animatorControllerAction: {fileID: 9100000, guid: 5396111b7b1d6714191f8866893fd3e6, type: 2}
+  animatorControllerFX: {fileID: 9100000, guid: d1d2af1497ed69f4ba71949c41f0d707,
+    type: 2}
+  animatorControllerAction: {fileID: 9100000, guid: 5396111b7b1d6714191f8866893fd3e6,
+    type: 2}
   animations:
   - icon: {fileID: 0}
     name: Dance
@@ -696,7 +698,7 @@ MonoBehaviour:
         endTimeStamp: 
   - icon: {fileID: 0}
     name: Spooky Dance
-    expanded: 1
+    expanded: 0
     entry:
       expanded: 0
       animationClip: {fileID: 0}
@@ -733,7 +735,8 @@ MonoBehaviour:
         audioUrl: 
         startTimeStamp: 
         endTimeStamp: 
-  vrcExpressionParameters: {fileID: 11400000, guid: e68bbab8ee283584db5698c4b944ed89, type: 2}
+  vrcExpressionParameters: {fileID: 11400000, guid: e68bbab8ee283584db5698c4b944ed89,
+    type: 2}
   vrcExpressionMenus:
   - {fileID: 11400000, guid: c2dbab297504f2f45a760a90475d27c0, type: 2}
   - {fileID: 11400000, guid: 9e5d6b27b4883cb42a0bac1a0a48148f, type: 2}
