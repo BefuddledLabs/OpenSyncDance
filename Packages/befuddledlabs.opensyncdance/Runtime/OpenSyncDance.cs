@@ -383,7 +383,7 @@ namespace BefuddledLabs.OpenSyncDance
                 var exitMusicState = _sendLayer.NewState($"Exit Music {currentSyncedAnimation.name}");
 
                 // Set the audio clip on the audio source
-                if (currentSyncedAnimation.entry.audio.audioClip)
+                if (currentSyncedAnimation.entry.audio.audioClip && _audioSource)
                 {
                     entryMusicState.Audio(_audioSource, (a) =>
                     {
@@ -395,7 +395,7 @@ namespace BefuddledLabs.OpenSyncDance
                     });
                 }
 
-                if (currentSyncedAnimation.loop.audio.audioClip)
+                if (currentSyncedAnimation.loop.audio.audioClip && _audioSource)
                 {
                     loopMusicState.Audio(_audioSource, (a) =>
                     {
@@ -407,7 +407,7 @@ namespace BefuddledLabs.OpenSyncDance
                     });
                 }
 
-                if (currentSyncedAnimation.exit.audio.audioClip)
+                if (currentSyncedAnimation.exit.audio.audioClip && _audioSource)
                 {
                     exitMusicState.Audio(_audioSource, (a) =>
                     {
@@ -439,15 +439,17 @@ namespace BefuddledLabs.OpenSyncDance
                 entryMusicState.WithAnimation(_aac.NewClip().Animating(a =>
                 {
                     ToggleBits(a);
-                    var volume = a.Animates(_audioSource, "m_Volume");
-                    volume.WithUnit(AacFlUnit.Seconds, (AacFlSettingKeyframes key) =>
-                    {
-                        key.Linear(0.0f, 0.0f);
-                        key.Linear(0.2f, currentSyncedAnimation.entry.audio.volume);
-                        if (currentSyncedAnimation.entry.animationClip)
-                            key.Linear(currentSyncedAnimation.entry.animationClip.length,
-                                currentSyncedAnimation.entry.audio.volume);
-                    });
+                    if (_audioSource) {
+                        var volume = a.Animates(_audioSource, "m_Volume");
+                        volume.WithUnit(AacFlUnit.Seconds, (AacFlSettingKeyframes key) =>
+                        {
+                            key.Linear(0.0f, 0.0f);
+                            key.Linear(0.2f, currentSyncedAnimation.entry.audio.volume);
+                            if (currentSyncedAnimation.entry.animationClip)
+                                key.Linear(currentSyncedAnimation.entry.animationClip.length,
+                                    currentSyncedAnimation.entry.audio.volume);
+                        });
+                    }
                 }));
                 loopMusicState.WithAnimation(toggleClip);
                 exitMusicState.WithAnimation(toggleClip);
@@ -466,6 +468,10 @@ namespace BefuddledLabs.OpenSyncDance
 
         private void GenerateSoundEnableLayer()
         {
+            // This is your center left audio channel
+            if (!_audioSource) // Quest pee pee poo poo
+                return;
+            
             var toggleLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationControllerFX, "SoundToggle");
             var soundParam = toggleLayer.BoolParameter("OSD_Sound");
 
@@ -501,7 +507,7 @@ namespace BefuddledLabs.OpenSyncDance
             readyState.TransitionsTo(lockState).When(enabled.IsFalse());
             lockState.TransitionsTo(readyState).When(enabled.IsTrue());
 
-            // Ugly thing to not IK sync the animation
+            // Ugly thing to not IK sync the animation :3
             readyState.TrackingTracks(AacAv3.Av3TrackingElement.Head);
             readyState.TrackingTracks(AacAv3.Av3TrackingElement.LeftHand);
             readyState.TrackingTracks(AacAv3.Av3TrackingElement.RightHand);
