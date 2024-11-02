@@ -903,7 +903,6 @@ namespace BefuddledLabs.OpenSyncDance
                                 DownloadManager.DownloadYouTubeLink(animObject);
                         }
                     }
-
                     if (EditorGUI.EndChangeCheck())
                         EditorUtility.SetDirty(_self);
                 }

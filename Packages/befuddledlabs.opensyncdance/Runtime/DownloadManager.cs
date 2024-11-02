@@ -8,34 +8,35 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEditor;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
-namespace BefuddledLabs.OpenSyncDance
-{
+namespace BefuddledLabs.OpenSyncDance {
     public static class DownloadManager {
+
+        private static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         
         /// <summary>
         /// Path to where we should have or are going to download FFmpeg
         /// </summary>
-        public static string FFmpegPath => BinariesPath + "/ffmpegBinaries/ffmpeg.exe";
+        public static string FFmpegPath => IsLinux ? "ffmpeg" : BinariesPath + "/ffmpegBinaries/ffmpeg.exe";
         
         /// <summary>
         /// Path to where we expect to find yt-dlp
         /// </summary>
-        public static string ytdlpPath => BinariesPath + "/yt-dlp.exe";
+        public static string ytdlpPath => IsLinux ? "yt-dlp" : BinariesPath + "/yt-dlp.exe";
         
         /// <summary>
         /// If we can find FFmpeg, otherwise we should download it
         /// </summary>
-        public static bool HasFFmpeg => File.Exists(FFmpegPath);
+        public static bool HasFFmpeg => File.Exists(FFmpegPath) || IsLinux; // Just assume you have it if you're running linux
         
         /// <summary>
         /// If we can find yt-dlp
         /// </summary>
-        public static bool Hasytdlp => File.Exists(ytdlpPath);
+        public static bool Hasytdlp => File.Exists(ytdlpPath) || IsLinux; // Just assume you have it if you're running linux
 
         /// <summary>
         /// Path to the root of the unity project
@@ -56,7 +57,7 @@ namespace BefuddledLabs.OpenSyncDance
         /// 2: end timestamp
         /// 3: output file
         /// </summary>
-        private static string ytdlpParams =  $"--ffmpeg-location \"{FFmpegPath}\" " // Use this ffmpeg
+        private static string ytdlpParams =  (IsLinux ? "" : $"--ffmpeg-location \"{FFmpegPath}\" ") // Use this ffmpeg
                                             + "-f bestaudio --audio-quality 0 -x --audio-format wav " // Convert to audio file
                                             + "--force-keyframes-at-cuts -i {0} --download-sections \"*{1}-{2}\" " // Download specific section of song
                                             + "--force-overwrites --no-mtime -v -o \"{3}\" " // Overwrite file and use curret date time
@@ -265,9 +266,9 @@ namespace BefuddledLabs.OpenSyncDance
                     TimeSpanToYtdlpString(end + TimeSpan.FromSeconds(1)),
                     tempSongPath),
                 UseShellExecute = false,
-                CreateNoWindow = true,
+                CreateNoWindow = true
             };
-
+            
             var downloadAttempts = 3; // Retry the download command a couple of times in case it fails..
             for (int i = 0; i < downloadAttempts; i++) {
                 var ytdlpProcess = Process.Start(ytdlpStartInfo);
