@@ -63,7 +63,7 @@ namespace BefuddledLabs.OpenSyncDance {
                                             + "--force-overwrites --no-mtime -v -o \"{3}\" " // Overwrite file and use curret date time
                                             + "--retry-sleep 5 --retries 3"; // Retry because youtube can be youtube
 
-        private static string ffmpegParams =  "-y -i \"{0}\" -ss {1} -t {2} \"{3}\"";
+        private static string ffmpegParams =  "-y -i \"{0}\" -ss {1} -t {2} -af loudnorm=I=-13:TP=-2:LRA=11 \"{3}\"";
 
         private static void CreateBinariesFolder() 
         {
