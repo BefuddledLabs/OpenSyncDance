@@ -708,7 +708,7 @@ namespace BefuddledLabs.OpenSyncDance
 
             tempParams.Add(new()
             {
-                name = $"OSD_Enabled",
+                name = "OSD_Enabled",
                 valueType = VRCExpressionParameters.ValueType.Bool,
                 saved = true,
                 networkSynced = true,
@@ -717,7 +717,7 @@ namespace BefuddledLabs.OpenSyncDance
 
             tempParams.Add(new()
             {
-                name = $"OSD_Sound",
+                name = "OSD_Sound",
                 valueType = VRCExpressionParameters.ValueType.Bool,
                 saved = true,
                 networkSynced = true,
