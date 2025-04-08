@@ -48,8 +48,8 @@ namespace BefuddledLabs.OpenSyncDance {
         /// </summary>
         private static string BinariesPath => BasePath + "/Packages/befuddledlabs.opensyncdance/Binaries";
         
-        private const string FFmpegURL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl-shared.zip";
-        private const string YtdlpURL = "https://github.com/yt-dlp/yt-dlp/releases/download/2024.05.27/yt-dlp_min.exe";
+        private const string FFmpegURL = "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-lgpl-shared.zip";
+        private const string YtdlpURL = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe";
 
         /// <summary>
         /// 0: url
