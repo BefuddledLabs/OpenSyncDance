@@ -74,12 +74,16 @@ namespace BefuddledLabs.OpenSyncDance
     {
         ExtraGUI.GUIBuilderElement GetLayout(SerializedProperty property)
         {
-            var ui = ExtraGUI.Builder(property)
-                .Draw(x => x
+            var ui = ExtraGUI.Builder(property);
+            ui.Draw(x => x
                     .DrawField("audioClip", "audio", GUIStyle.Mid)
                     .DrawEmpty()
                     .DrawField("audioType", "type", GUIStyle.Mid)
                     .DrawHorizontally());
+            ui.Draw(x => x
+                .DrawSlider("volume", 0f, 1f, "volume", GUIStyle.Dark)
+                .DrawHorizontally());
+            
             if ((AudioType)property.FindPropertyRelative("audioType").boxedValue == AudioType.Youtube)
             {
                 ui.Draw(x => x
@@ -225,6 +229,16 @@ namespace BefuddledLabs.OpenSyncDance
         public List<VRCExpressionsMenu> vrcExpressionMenus = new();
 
         /// <summary>
+        /// Enables volume control in the menu/parameters
+        /// </summary>
+        public bool volumeControl = true;
+        
+        /// <summary>
+        /// The default volume of the audio source, mainly intended for volumeControl
+        /// </summary>
+        public float defaultVolume = 1f;
+
+        /// <summary>
         /// Makes sure that the required classes are initialized.
         /// </summary>
         public void EnsureInitialized()
@@ -246,6 +260,11 @@ namespace BefuddledLabs.OpenSyncDance
         /// Layer that manages broadcasting the animation id.
         /// </summary>
         private AacFlLayer _sendLayer;
+
+        /// <summary>
+        /// Layer that calculates and applies the volume of the current song
+        /// </summary>
+        private AacFlLayer _volumeLayer;
 
         /// <summary>
         /// Layer that manages syncing the current animation with the fewest amount of bits needed.
@@ -301,6 +320,7 @@ namespace BefuddledLabs.OpenSyncDance
 
             _recvLayer = _aac.CreateSupportingArbitraryControllerLayer(animatorControllerAction, "recvLayer");
             _sendLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationControllerFX, "sendLayer");
+            _volumeLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationControllerFX, "volumeLayer");
             _bitLayer = _aac.CreateSupportingArbitraryControllerLayer(_animationControllerFX, "BitConverter");
 
             // Create the parameters for receiving the animation index;
@@ -362,11 +382,34 @@ namespace BefuddledLabs.OpenSyncDance
             audio.PlayAudio.StopOnExit = true;
         }
 
+        private void GenerateVolumeLayer()
+        {
+            var volumeParam = _volumeLayer.FloatParameter("OSD_Volume");
+            var songVolumeParam = _volumeLayer.FloatParameter("OSD_Song_Volume");
+
+            var blendTree = _aac.NewBlendTree();
+            blendTree.Direct().WithAnimation(_aac.NewBlendTree().Direct().WithAnimation(_aac.NewClip().Animating(a => {
+                a.Animates(_audioSource, "m_Volume").WithFrameCountUnit(
+                    f => {
+                        f.Linear(0, 1);
+                        f.Linear(1, 1);
+                    });
+            }), songVolumeParam), volumeParam);
+            
+            var blendTreeState = _volumeLayer.NewState("Volume BlendTree");
+            blendTreeState.WithAnimation(blendTree);
+        }
+
         private void GenerateSendLayer()
         {
             var readyState = _sendLayer.NewState("Ready");
             var lockState = _sendLayer.NewState("Lock");
             var exitState = _sendLayer.NewState("Done");
+            
+            var enabled = _sendLayer.BoolParameter("OSD_Enabled");
+            var songVolumeParam = _sendLayer.FloatParameter("OSD_Song_Volume");
+
+            exitState.Drives(songVolumeParam, 0);
 
             readyState.TransitionsTo(lockState).When(_paramRecvBits.IsAnyTrue());
             lockState.TransitionsTo(readyState).When(_paramRecvBits.AreFalse());
@@ -377,7 +420,6 @@ namespace BefuddledLabs.OpenSyncDance
                 var currentSyncedAnimation = animations[i - 1];
                 var danceState = _sendLayer.NewState($"Dance {currentSyncedAnimation.name}");
 
-                var enabled = _sendLayer.BoolParameter("OSD_Enabled");
 
                 var entryMusicState = _sendLayer.NewState($"Entry Music {currentSyncedAnimation.name}");
                 var loopMusicState = _sendLayer.NewState($"Loop Music {currentSyncedAnimation.name}");
@@ -392,7 +434,6 @@ namespace BefuddledLabs.OpenSyncDance
                         a.StartsPlayingOnEnterAfterSeconds(_animDelay);
                         a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
                             new[] { currentSyncedAnimation.entry.audio.audioClip });
-                        a.SetsVolume(0);
                     });
                 }
 
@@ -404,7 +445,6 @@ namespace BefuddledLabs.OpenSyncDance
                         a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
                             new[] { currentSyncedAnimation.loop.audio.audioClip });
                         a.SetsLooping();
-                        a.SetsVolume(currentSyncedAnimation.loop.audio.volume);
                     });
                 }
 
@@ -415,7 +455,6 @@ namespace BefuddledLabs.OpenSyncDance
                         SetCommonAudioSettings(a);
                         a.SelectsClip(VRC_AnimatorPlayAudio.Order.Roundabout,
                             new[] { currentSyncedAnimation.exit.audio.audioClip });
-                        a.SetsVolume(currentSyncedAnimation.loop.audio.volume);
                     });
                 }
 
@@ -434,26 +473,41 @@ namespace BefuddledLabs.OpenSyncDance
                     }
                 }
 
-                var toggleClip = _aac.NewClip().Animating(ToggleBits);
-
-                danceState.WithAnimation(toggleClip);
-                entryMusicState.WithAnimation(_aac.NewClip().Animating(a =>
+                void SoundAnimation(AacFlEditClip a, SyncedAnimation an, float startVolume)
                 {
-                    ToggleBits(a);
                     if (_audioSource) {
-                        var volume = a.Animates(_audioSource, "m_Volume");
-                        volume.WithUnit(AacFlUnit.Seconds, (AacFlSettingKeyframes key) =>
-                        {
-                            key.Linear(0.0f, 0.0f);
-                            key.Linear(0.2f, currentSyncedAnimation.entry.audio.volume);
-                            if (currentSyncedAnimation.entry.animationClip)
-                                key.Linear(currentSyncedAnimation.entry.animationClip.length,
-                                    currentSyncedAnimation.entry.audio.volume);
+                        var volume = a.AnimatesAnimator(songVolumeParam);
+                        volume.WithUnit(AacFlUnit.Seconds, key => {
+                            if (startVolume >= 0) {
+                                var endTime = 0.2f;
+                                if (an.animationClip)
+                                    endTime = Mathf.Min(an.animationClip.length, endTime);
+                                key.Linear(0f, startVolume);
+                                key.Linear(endTime, an.audio.volume);
+                            }
+                            else
+                            {
+                                key.Linear(0f, an.audio.volume);
+                            }
                         });
                     }
-                }));
-                loopMusicState.WithAnimation(toggleClip);
-                exitMusicState.WithAnimation(toggleClip);
+                }
+
+                AacFlClip CreateClip(SyncedAnimation an, float startVolume = -1) =>
+                    _aac.NewClip().Animating(a => {
+                        ToggleBits(a);
+                        SoundAnimation(a, an, startVolume);
+                    });
+                
+                danceState.WithAnimation(_aac.NewClip().Animating(ToggleBits));
+
+                entryMusicState.WithAnimation(CreateClip(currentSyncedAnimation.entry, 0));
+                loopMusicState.WithAnimation(CreateClip(currentSyncedAnimation.loop));
+                exitMusicState.WithAnimation(CreateClip(currentSyncedAnimation.exit));
+                
+                entryMusicState.Drives(songVolumeParam, currentSyncedAnimation.entry.audio.volume);
+                loopMusicState.Drives(songVolumeParam, currentSyncedAnimation.loop.audio.volume);
+                exitMusicState.Drives(songVolumeParam, currentSyncedAnimation.exit.audio.volume);
 
                 // anim entry (with early exit)
                 entryMusicState.TransitionsTo(exitMusicState).When(_paramSendAnimId.IsNotEqualTo(i));
@@ -636,6 +690,7 @@ namespace BefuddledLabs.OpenSyncDance
             }
 
             GenerateSyncedBitLayer();
+            GenerateVolumeLayer();
             GenerateSendLayer();
             GenerateReceiveLayer();
             GenerateSoundEnableLayer();
@@ -724,6 +779,17 @@ namespace BefuddledLabs.OpenSyncDance
                 defaultValue = 1,
             });
 
+
+            tempParams.Add(new()
+            {
+                name = "OSD_Volume",
+                valueType = VRCExpressionParameters.ValueType.Float,
+                saved = true,
+                networkSynced = volumeControl, // doesn't count towards bits if not synced
+                defaultValue = defaultVolume,
+            });
+
+
             vrcExpressionParameters.parameters = tempParams.ToArray();
 
             // Ensure we have enough menus
@@ -774,13 +840,29 @@ namespace BefuddledLabs.OpenSyncDance
                 value = 1,
             });
 
+            if (volumeControl)
+            {
+                vrcExpressionMenus[0].controls.Add(new VRCExpressionsMenu.Control
+                {
+                    name = "Volume",
+                    subParameters = new [] {new VRCExpressionsMenu.Control.Parameter()
+                    {
+                        name = "OSD_Volume",
+                    }},
+                    type = VRCExpressionsMenu.Control.ControlType.RadialPuppet,
+                    value = defaultVolume,
+                });
+            }
+
+            int firstPageInitialControlCount = vrcExpressionMenus[0].controls.Count;
+
             // Setup menus
             var totalAnims = 0;
             for (int pageId = 0, animationId = 0; pageId < numPages; pageId++)
             {
                 bool isLastPage = pageId == numPages - 1;
                 bool isFirstPage = pageId == 0;
-                int animsOnThisPage = animsPerPage + (isLastPage ? 1 : 0) - (isFirstPage ? 2 : 0);
+                int animsOnThisPage = animsPerPage + (isLastPage ? 1 : 0) - (isFirstPage ? (firstPageInitialControlCount-1) : 0);
 
                 // Skip animations that we already put in pages, then take enough to fill the page.
                 // Map the taken items to a VRC menu button.
@@ -850,8 +932,20 @@ namespace BefuddledLabs.OpenSyncDance
 
             var emoteProperty = serializedObject.FindProperty("animations");
             EditorGUILayout.PropertyField(emoteProperty, true);
+            
+            GUILayout.BeginHorizontal();
+            
+            var volumeControlProperty = serializedObject.FindProperty("volumeControl");
+            EditorGUILayout.PropertyField(volumeControlProperty, true);
+            GUILayout.Label("Uses 8 bits when enabled.");
+
+            GUILayout.EndHorizontal();
+            
+            var defaultVolumeProperty = serializedObject.FindProperty("defaultVolume");
+            EditorGUILayout.Slider(defaultVolumeProperty, 0f, 1f);
 
             // Advanced settings for smarty pants. You probably don't need this.
+            // ReSharper disable once AssignmentInConditionalExpression
             if (_uiAdvancedFoldoutState =
                 EditorGUILayout.BeginFoldoutHeaderGroup(_uiAdvancedFoldoutState, "Advanced"))
             {
@@ -880,9 +974,9 @@ namespace BefuddledLabs.OpenSyncDance
                 if (GUILayout.Button("Download Missing AudioClips"))
                 {
                     EditorGUI.BeginChangeCheck();
-                    for (var index = 0; index < emote_property.arraySize; index++)
+                    for (var index = 0; index < emoteProperty.arraySize; index++)
                     {
-                        var syncedEmote = emote_property.GetArrayElementAtIndex(index);
+                        var syncedEmote = emoteProperty.GetArrayElementAtIndex(index);
                         var anims = new[]
                         {
                             syncedEmote.FindPropertyRelative("entry"),
