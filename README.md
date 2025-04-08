@@ -1,7 +1,7 @@
 # Open Sync Dance
 
 > [!WARNING]  
-> This package is under heavy development. Things may break! Use at your own risk.
+> This package is under *"""heavy"""* development. Things may break! Use at your own risk.
 
 Open Sync Dance is a utility and Unity prefab to have player-synchronized dances in VRChat [like in this video](https://www.youtube.com/watch?v=I_MiNH-j1dw).
 
