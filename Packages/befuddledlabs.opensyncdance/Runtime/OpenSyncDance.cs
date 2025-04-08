@@ -165,6 +165,7 @@ namespace BefuddledLabs.OpenSyncDance
             return ExtraGUI.Builder(property)
                 .Draw(x => x
                     .DrawField("name", "name", GUIStyle.Dark)
+                    .DrawField("icon", "icon", GUIStyle.Dark)
                     .DrawHorizontally())
                 .DrawField("entry", "Entry", GUIStyle.Mid)
                 .DrawField("loop", "Loop", GUIStyle.Mid)
