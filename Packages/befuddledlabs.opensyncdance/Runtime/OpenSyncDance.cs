@@ -839,17 +839,17 @@ namespace BefuddledLabs.OpenSyncDance
             _self.EnsureInitialized();
             serializedObject.Update();
 
-            var contactPrefix_property = serializedObject.FindProperty("contactPrefix");
-            EditorGUILayout.PropertyField(contactPrefix_property, true);
+            var contactPrefixProperty = serializedObject.FindProperty("contactPrefix");
+            EditorGUILayout.PropertyField(contactPrefixProperty, true);
 
-            var assetContainer_property = serializedObject.FindProperty("animatorControllerAction");
-            EditorGUILayout.PropertyField(assetContainer_property, true);
+            var assetContainerProperty = serializedObject.FindProperty("animatorControllerAction");
+            EditorGUILayout.PropertyField(assetContainerProperty, true);
 
-            assetContainer_property = serializedObject.FindProperty("animatorControllerFX");
-            EditorGUILayout.PropertyField(assetContainer_property, true);
+            assetContainerProperty = serializedObject.FindProperty("animatorControllerFX");
+            EditorGUILayout.PropertyField(assetContainerProperty, true);
 
-            var emote_property = serializedObject.FindProperty("animations");
-            EditorGUILayout.PropertyField(emote_property, true);
+            var emoteProperty = serializedObject.FindProperty("animations");
+            EditorGUILayout.PropertyField(emoteProperty, true);
 
             // Advanced settings for smarty pants. You probably don't need this.
             if (_uiAdvancedFoldoutState =
