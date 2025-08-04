@@ -475,10 +475,13 @@ namespace BefuddledLabs.OpenSyncDance
 
                 void SoundAnimation(AacFlEditClip a, SyncedAnimation an, float startVolume)
                 {
-                    if (_audioSource) {
+                    if (_audioSource)
+                    {
                         var volume = a.AnimatesAnimator(songVolumeParam);
-                        volume.WithUnit(AacFlUnit.Seconds, key => {
-                            if (startVolume >= 0) {
+                        volume.WithUnit(AacFlUnit.Seconds, key =>
+                        {
+                            if (startVolume >= 0)
+                            {
                                 var endTime = 0.2f;
                                 if (an.animationClip)
                                     endTime = Mathf.Min(an.animationClip.length, endTime);
@@ -491,6 +494,11 @@ namespace BefuddledLabs.OpenSyncDance
                             }
                         });
                     }
+                    a.Animates(gameObject).WithUnit(AacFlUnit.Seconds, k =>
+                    {
+                        if (an.animationClip)
+                            k.Constant(an.animationClip.length, 1);
+                    });
                 }
 
                 AacFlClip CreateClip(SyncedAnimation an, float startVolume = -1) =>
@@ -511,13 +519,13 @@ namespace BefuddledLabs.OpenSyncDance
 
                 // anim entry (with early exit)
                 entryMusicState.TransitionsTo(exitMusicState).When(_paramSendAnimId.IsNotEqualTo(i));
-                entryMusicState.TransitionsTo(loopMusicState).Automatically();
+                entryMusicState.TransitionsTo(loopMusicState).AfterAnimationFinishes();
 
                 // anim loop
                 loopMusicState.TransitionsTo(exitMusicState).When(_paramSendAnimId.IsNotEqualTo(i));
 
                 // anim exit
-                exitMusicState.TransitionsTo(exitState).Automatically();
+                exitMusicState.TransitionsTo(exitState).AfterAnimationFinishes();
             }
         }
 
